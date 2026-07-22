@@ -1,0 +1,17 @@
+{
+  "name": "openphysicscontrol-mineflayer-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Black-box physics tests for OpenPhysicsControl",
+  "type": "module",
+  "scripts": {
+    "test": "node run.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "mineflayer": "4.37.1",
+    "vec3": "0.1.10"
+  }
+}

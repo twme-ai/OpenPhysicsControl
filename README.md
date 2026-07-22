@@ -1,0 +1,56 @@
+# OpenPhysicsControl
+
+OpenPhysicsControl 是從零撰寫、採 MIT 授權的 Bukkit 世界物理控制插件。它不編譯、打包或引用 Dymeth/PhysicsControl 的原始碼；原專案僅作為產品需求背景。
+
+## 平台
+
+- Paper 26.2 / Java 25（以 `26.2.build.65-beta` 編譯及實機驗證）
+- Spigot 26.2 / Java 25（以 `26.2-R0.1-SNAPSHOT` 編譯驗證）
+- Folia：所有物理處理只存取事件所在 region，不建立全域排程工作，也不跨 region 操作玩家或實體；官方目前尚無 26.2，已在最新穩定版 26.1.2 build 8 完成載入、指令及乾淨停用驗證
+- `plugin.yml` 維持 `api-version: '1.13'`
+
+## 功能
+
+71 項規則可按世界獨立控制，涵蓋方塊與流體、火焰與氣候、植物生長、實體物理、紅石以及自動化方塊。所有規則預設開啟，狀態儲存在 `plugins/OpenPhysicsControl/worlds/<world-uuid>.yml`。完整事件來源及測試狀態見 [`docs/physics-matrix.md`](docs/physics-matrix.md)。
+
+`/opc` 開啟 GUI。也可使用：
+
+```text
+/opc set <rule> <on|off|toggle> [world]
+/opc language [auto|en|zh_tw]
+/opc reload
+```
+
+玩家未指定語言時會依 Minecraft client locale 選擇英文或繁體中文，偏好持久化在 `player-languages.yml`。訊息檔位於 `lang/*.yml` 並使用 MiniMessage 格式。
+
+## 依賴與建置
+
+唯一打包的 runtime 是 MiniMessage 及其必要 Adventure 元件；所有類別 relocation 到插件內部 namespace。Bukkit/Paper API 為 `compileOnly`。
+
+```bash
+# 在本目錄執行，預設 Paper 26.2 API
+JAVA_HOME=/path/to/jdk-25 ./gradlew clean build
+
+# Spigot 26.2 API 相容性建置
+JAVA_HOME=/path/to/jdk-25 ./gradlew clean build -PserverPlatform=spigot
+```
+
+產物：`build/libs/OpenPhysicsControl.jar`
+
+## 測試
+
+```bash
+# 分類、語系完整性與 descriptor 測試
+JAVA_HOME=/path/to/jdk-25 ./gradlew clean test
+
+# Mineflayer 黑箱測試；會下載已鎖定 SHA-256 的 Paper 1.21.11 測試服
+cd tests/mineflayer
+npm ci
+JAVA_HOME=/path/to/jdk-25 npm test
+```
+
+Mineflayer 4.37.1 目前最高支援 Minecraft 1.21.11，尚不能直接登入 26.2。黑箱測試使用同一個插件 JAR 驗證可觀測行為；26.2 仍由雙 API 編譯與 Paper/Folia 實機測試驗證。
+
+## 授權
+
+本目錄的程式碼採 [MIT License](LICENSE)。它不包含根目錄相容性分支或原始 Dymeth/PhysicsControl 專案的程式碼。

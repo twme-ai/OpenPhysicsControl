@@ -1,0 +1,5 @@
+# Console and fallback language.
+default-language: en
+
+# Players without an explicit preference use their Minecraft client language.
+follow-client-language: true

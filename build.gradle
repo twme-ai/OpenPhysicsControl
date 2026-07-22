@@ -1,0 +1,62 @@
+plugins {
+    id 'java'
+    id 'com.gradleup.shadow' version '9.4.1'
+}
+
+group = 'dev.openphysicscontrol'
+version = '2.0.0'
+
+def paperApiVersion = '26.2.build.65-beta'
+def spigotApiVersion = '26.2-R0.1-SNAPSHOT'
+def adventureVersion = '4.25.0'
+def serverApi = providers.gradleProperty('serverPlatform').getOrElse('paper') == 'spigot'
+    ? "org.spigotmc:spigot-api:${spigotApiVersion}"
+    : "io.papermc.paper:paper-api:${paperApiVersion}"
+
+repositories {
+    mavenCentral()
+    maven { url 'https://repo.papermc.io/repository/maven-public/' }
+    maven { url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/' }
+}
+
+dependencies {
+    compileOnly serverApi
+    implementation "net.kyori:adventure-text-minimessage:${adventureVersion}"
+    implementation "net.kyori:adventure-text-serializer-legacy:${adventureVersion}"
+
+    testImplementation platform('org.junit:junit-bom:6.0.3')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation serverApi
+    testImplementation 'org.yaml:snakeyaml:2.2'
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(25)
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 25
+}
+
+processResources {
+    filteringCharset = 'UTF-8'
+    filesMatching('plugin.yml') {
+        expand(version: project.version)
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
+
+shadowJar {
+    archiveFileName = 'OpenPhysicsControl.jar'
+    destinationDirectory = file("${rootProject.projectDir}/build/libs")
+    relocate 'net.kyori', 'dev.openphysicscontrol.internal.kyori'
+    exclude 'META-INF/*.SF', 'META-INF/*.RSA', 'META-INF/*.DSA', 'module-info.class', 'META-INF/versions/**/module-info.class'
+}
+
+jar.enabled = false
+assemble.dependsOn shadowJar
