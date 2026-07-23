@@ -7,6 +7,7 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -19,10 +20,14 @@ final class ResourceTest {
     private static final String[] LOCALES = {"en", "zh_tw"};
 
     @Test
+    @SuppressWarnings("unchecked")
     void descriptorKeepsRequestedCompatibility() {
         Map<String, Object> plugin = yaml("plugin.yml");
         assertEquals("1.13", plugin.get("api-version"));
         assertEquals(Boolean.TRUE, plugin.get("folia-supported"));
+        Map<String, Object> commands = (Map<String, Object>) plugin.get("commands");
+        Map<String, Object> command = (Map<String, Object>) commands.get("openphysics");
+        assertEquals(List.of("ophysics", "opc", "pc"), command.get("aliases"));
     }
 
     @Test

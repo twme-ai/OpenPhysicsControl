@@ -13,7 +13,7 @@ OpenPhysicsControl 是從零撰寫、採 MIT 授權的 Bukkit 世界物理控制
 
 71 項規則可按世界獨立控制，涵蓋方塊與流體、火焰與氣候、植物生長、實體物理、紅石以及自動化方塊。所有規則預設開啟，狀態儲存在 `plugins/OpenPhysicsControl/worlds/<world-uuid>.yml`。完整事件來源及測試狀態見 [`docs/physics-matrix.md`](docs/physics-matrix.md)。
 
-`/opc` 開啟 GUI。也可使用：
+`/opc` 開啟 GUI，亦可使用 `/openphysics`、`/ophysics` 或 `/pc`。其他指令：
 
 ```text
 /opc set <rule> <on|off|toggle> [world]

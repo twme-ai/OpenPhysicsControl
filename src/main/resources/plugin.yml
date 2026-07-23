@@ -7,7 +7,7 @@ folia-supported: true
 authors: [OpenPhysicsControl contributors]
 commands:
   openphysics:
-    aliases: [ophysics, opc]
+    aliases: [ophysics, opc, pc]
     description: 'Manage world physics rules'
     usage: '/<command> [set|language|reload]'
 permissions:

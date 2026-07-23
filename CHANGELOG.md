@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.1 - 2026-07-23
+
+- Added `/pc` as an alias for `/openphysics`.
+- Exercised the new alias through the Mineflayer localized-menu player path.
+
 ## 2.0.0 - 2026-07-22
 
 - Expanded per-world control from 21 aggregate switches to 71 physics rules.

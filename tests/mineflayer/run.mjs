@@ -122,11 +122,11 @@ function windowTitle (window) {
 
 async function testLocalizedMenu () {
   await commands('op PhysicsBot')
-  bot.chat('/opc language zh_tw')
+  bot.chat('/pc language zh_tw')
   await delay(500)
 
   const firstPagePromise = nextEvent(bot, 'windowOpen')
-  bot.chat('/opc')
+  bot.chat('/pc')
   const firstPage = await firstPagePromise
   await delay(300)
   assert.match(windowTitle(firstPage), /物理控制/)
@@ -140,7 +140,7 @@ async function testLocalizedMenu () {
   assert.match(windowTitle(secondPage), /2\/2/)
   assert.equal(secondPage.slots.slice(0, 45).filter(Boolean).length, 26, 'second rule page is incomplete')
   bot.closeWindow(secondPage)
-  bot.chat('/opc language auto')
+  bot.chat('/pc language auto')
   await delay(300)
   console.log('PASS localized paginated menu')
 }
@@ -379,8 +379,8 @@ async function start () {
   })
   server.stdout.on('data', chunk => process.stdout.write(`[paper] ${chunk}`))
   server.stderr.on('data', chunk => process.stderr.write(`[paper] ${chunk}`))
+  await waitForServer(/Enabling OpenPhysicsControl v[^\r\n]+/)
   await waitForServer(/Done \([^)]*\)!/)
-  assert.match(serverOutput, /Enabling OpenPhysicsControl v2\.0\.0/, 'plugin did not enable')
 
   await commands(
     'execute in minecraft:overworld run forceload add -16 -16 47 31'
