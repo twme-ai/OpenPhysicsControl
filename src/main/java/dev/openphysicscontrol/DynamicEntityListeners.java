@@ -13,6 +13,8 @@ final class DynamicEntityListeners implements Listener {
     private static final String BUKKIT_KNOCKBACK = "org.bukkit.event.entity.EntityKnockbackEvent";
     private static final String SPIGOT_CUBE_SPLIT = "org.bukkit.event.entity.CubeMobSplitEvent";
     private static final String PAPER_CUBE_SPLIT = "org.bukkit.event.entity.SlimeSplitEvent";
+    private static final String PAPER_ENTITY_ZAP = "com.destroystokyo.paper.event.entity.EntityZapEvent";
+    private static final String SPIGOT_PIG_ZAP = "org.bukkit.event.entity.PigZapEvent";
 
     private DynamicEntityListeners() {
     }
@@ -22,6 +24,8 @@ final class DynamicEntityListeners implements Listener {
             PAPER_KNOCKBACK, BUKKIT_KNOCKBACK);
         registerFirstAvailable(plugin, rules, Rule.MOB_TRANSFORM, "cube-mob splitting",
             SPIGOT_CUBE_SPLIT, PAPER_CUBE_SPLIT);
+        registerFirstAvailable(plugin, rules, Rule.MOB_TRANSFORM, "entity lightning transformations",
+            PAPER_ENTITY_ZAP, SPIGOT_PIG_ZAP);
     }
 
     @SuppressWarnings("unchecked")

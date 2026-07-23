@@ -81,7 +81,7 @@ Evidence codes:
 | `dripleaf-tilt` | Same physical interaction events | Big dripleaf tilt caused by entities | UT |
 | `natural-mob-spawning` | `CreatureSpawnEvent` with `NATURAL` reason | Natural mob spawning only; commands, spawners, breeding, buckets, and plugins remain allowed | API |
 | `mob-breeding` | `EntityEnterLoveModeEvent`, `EntityBreedEvent` | Entry into love mode and animal breeding completion | API |
-| `mob-transform` | `EntityTransformEvent`, runtime-selected `CubeMobSplitEvent`/`SlimeSplitEvent`, `PigZapEvent`, `CreeperPowerEvent`, `SheepRegrowWoolEvent` | Replacement transformations, cube-mob splitting, lightning state changes, and wool regrowth | API |
+| `mob-transform` | `EntityTransformEvent`, runtime-selected `CubeMobSplitEvent`/`SlimeSplitEvent` and `EntityZapEvent`/`PigZapEvent`, `CreeperPowerEvent`, `SheepRegrowWoolEvent` | Replacement transformations, cube-mob splitting, lightning state changes, and wool regrowth | API |
 | `beehive-entry` | `EntityEnterBlockEvent` | Bees entering nests and hives | API |
 | `item-despawn` | `ItemDespawnEvent` | Dropped item expiry | API |
 | `item-merge` | `ItemMergeEvent` | Nearby dropped-item stack merging | API |

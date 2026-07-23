@@ -120,29 +120,112 @@ function windowTitle (window) {
   return String(window.title)
 }
 
+function occupiedSlots (window, end = window.inventoryStart) {
+  return window.slots.slice(0, end).flatMap((item, slot) => item ? [slot] : [])
+}
+
+function itemText (item) {
+  const values = [item?.displayName, item?.customName]
+  for (const property of ['components', 'nbt']) {
+    try {
+      values.push(JSON.stringify(item?.[property]))
+    } catch {
+      // Ignore protocol-specific non-serializable fields.
+    }
+  }
+  try {
+    if (typeof item?.toJSON === 'function') values.push(JSON.stringify(item.toJSON()))
+  } catch {
+    // The direct fields above are sufficient on older Mineflayer versions.
+  }
+  return values.filter(Boolean).join(' ')
+}
+
 async function testLocalizedMenu () {
   await commands('op PhysicsBot')
   bot.chat('/pc language zh_tw')
   await delay(500)
 
-  const firstPagePromise = nextEvent(bot, 'windowOpen')
+  const categoryMenuPromise = nextEvent(bot, 'windowOpen')
   bot.chat('/pc')
-  const firstPage = await firstPagePromise
+  let categoryMenu = await categoryMenuPromise
   await delay(300)
-  assert.match(windowTitle(firstPage), /物理控制/)
-  assert.equal(firstPage.inventoryStart, 54, 'menu is not six rows')
-  assert.equal(firstPage.slots.slice(0, 45).filter(Boolean).length, 45, 'first rule page is incomplete')
+  assert.match(windowTitle(categoryMenu), /物理分類/)
+  assert.equal(categoryMenu.inventoryStart, 27, 'category menu is not three rows')
+  assert.deepEqual(occupiedSlots(categoryMenu), [11, 12, 13, 14, 15], 'categories are not centered')
+  assert.match(itemText(categoryMenu.slots[11]), /運作中/)
+  assert.match(itemText(categoryMenu.slots[11]), /已停止/)
 
-  const secondPagePromise = nextEvent(bot, 'windowOpen')
-  await bot.clickWindow(53, 0, 0)
-  const secondPage = await secondPagePromise
-  await delay(300)
-  assert.match(windowTitle(secondPage), /2\/2/)
-  assert.equal(secondPage.slots.slice(0, 45).filter(Boolean).length, 26, 'second rule page is incomplete')
-  bot.closeWindow(secondPage)
+  const categories = [
+    {
+      slot: 11,
+      title: /方塊與訊號/,
+      size: 27,
+      rules: [1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 16]
+    },
+    {
+      slot: 12,
+      title: /火焰、氣候與時間/,
+      size: 27,
+      rules: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17]
+    },
+    {
+      slot: 13,
+      title: /植物與生長/,
+      size: 27,
+      rules: [1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 16]
+    },
+    {
+      slot: 14,
+      title: /實體與玩家/,
+      size: 27,
+      rules: Array.from({ length: 18 }, (_, slot) => slot)
+    },
+    {
+      slot: 15,
+      title: /機械與處理/,
+      size: 18,
+      rules: [0, 1, 2, 3, 5, 6, 7, 8]
+    }
+  ]
+
+  for (const [index, category] of categories.entries()) {
+    const submenuPromise = nextEvent(bot, 'windowOpen')
+    await bot.clickWindow(category.slot, 0, 0)
+    const submenu = await submenuPromise
+    await delay(300)
+    assert.match(windowTitle(submenu), category.title)
+    assert.equal(submenu.inventoryStart, category.size, 'category submenu has the wrong size')
+    assert.deepEqual(occupiedSlots(submenu, category.size - 9), category.rules, 'rules are not centered')
+    assert.deepEqual(occupiedSlots(submenu), [...category.rules, category.size - 5].sort((a, b) => a - b),
+      'category submenu contains unexpected items')
+
+    if (index === 0) {
+      const ruleSlot = category.rules[0]
+      assert.match(itemText(submenu.slots[ruleSlot]), /物理狀態.*運作中/)
+      await bot.clickWindow(ruleSlot, 0, 0)
+      await delay(400)
+      assert.match(itemText(submenu.slots[ruleSlot]), /物理狀態.*已停止/)
+      await bot.clickWindow(ruleSlot, 0, 0)
+      await delay(400)
+      assert.match(itemText(submenu.slots[ruleSlot]), /物理狀態.*運作中/)
+    }
+
+    if (index === categories.length - 1) {
+      bot.closeWindow(submenu)
+      break
+    }
+    const returnPromise = nextEvent(bot, 'windowOpen')
+    await bot.clickWindow(category.size - 5, 0, 0)
+    categoryMenu = await returnPromise
+    await delay(250)
+    assert.match(windowTitle(categoryMenu), /物理分類/)
+    assert.deepEqual(occupiedSlots(categoryMenu), [11, 12, 13, 14, 15])
+  }
+
   bot.chat('/pc language auto')
   await delay(300)
-  console.log('PASS localized paginated menu')
+  console.log('PASS centered categorized menu and explicit states')
 }
 
 async function testGravity () {

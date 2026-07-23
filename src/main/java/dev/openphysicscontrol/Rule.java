@@ -110,11 +110,21 @@ public enum Rule {
     }
 
     public enum Group {
-        BLOCKS,
-        CLIMATE,
-        GROWTH,
-        ENTITIES,
-        MACHINES;
+        BLOCKS(Material.PISTON),
+        CLIMATE(Material.LIGHTNING_ROD),
+        GROWTH(Material.OAK_SAPLING),
+        ENTITIES(Material.CREEPER_HEAD),
+        MACHINES(Material.CRAFTER);
+
+        private final Material icon;
+
+        Group(Material icon) {
+            this.icon = icon;
+        }
+
+        public Material icon() {
+            return this.icon;
+        }
 
         public String messageKey() {
             return "group-" + name().toLowerCase(Locale.ROOT);

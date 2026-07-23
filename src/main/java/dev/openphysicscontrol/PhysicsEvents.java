@@ -52,7 +52,6 @@ import org.bukkit.event.entity.EntityTransformEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.entity.ItemDespawnEvent;
 import org.bukkit.event.entity.ItemMergeEvent;
-import org.bukkit.event.entity.PigZapEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.entity.SheepRegrowWoolEvent;
 import org.bukkit.event.inventory.BrewEvent;
@@ -295,11 +294,6 @@ public final class PhysicsEvents implements Listener {
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void transform(EntityTransformEvent event) {
-        control(event, event.getEntity().getWorld(), Rule.MOB_TRANSFORM);
-    }
-
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-    public void pigZap(PigZapEvent event) {
         control(event, event.getEntity().getWorld(), Rule.MOB_TRANSFORM);
     }
 

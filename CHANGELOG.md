@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.1.0 - 2026-07-23
+
+- Replaced the flat paginated GUI with a centered category menu and centered rule submenus.
+- Made rule states explicit as physics running or physics stopped, including upgrade-safe bundled wording migration.
+- Switched Paper lightning transformations to the supported `EntityZapEvent` while retaining a runtime Spigot fallback.
+- Expanded Mineflayer coverage to navigate all five categories, validate layouts, and toggle the explicit state text.
+
 ## 2.0.1 - 2026-07-23
 
 - Added `/pc` as an alias for `/openphysics`.

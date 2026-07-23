@@ -44,6 +44,11 @@ final class ResourceTest {
     }
 
     @Test
+    void localesExposeTheSameMessageKeys() {
+        assertEquals(yaml("lang/en.yml").keySet(), yaml("lang/zh_tw.yml").keySet());
+    }
+
+    @Test
     void nestedRulePlaceholdersRemainPlainText() {
         MiniMessage miniMessage = MiniMessage.miniMessage();
         for (String locale : LOCALES) {
@@ -68,15 +73,25 @@ final class ResourceTest {
     }
 
     @Test
-    void localeUpgradeAddsMissingKeysWithoutReplacingOverrides() {
+    void localeUpgradeAddsKeysAndReplacesOnlyOldBundledWording() {
         YamlConfiguration installed = new YamlConfiguration();
         installed.set("prefix", "custom prefix");
+        installed.set("rule-changed", "<prefix> <gray><rule> in <world> is now <state>.</gray>");
+        installed.set("state-on", "<green>Enabled</green>");
+        installed.set("state-off", "custom disabled wording");
         YamlConfiguration bundled = new YamlConfiguration();
         bundled.set("prefix", "bundled prefix");
+        bundled.set("rule-changed", "<prefix> <gray><rule> in <world>: <state>.</gray>");
+        bundled.set("state-on", "physics running");
+        bundled.set("state-off", "physics stopped");
         bundled.set("new-rule", "new label");
 
-        assertEquals(1, LocaleService.mergeMissing(installed, bundled));
+        assertEquals(3, LocaleService.mergeBundledUpdates("en", installed, bundled));
         assertEquals("custom prefix", installed.getString("prefix"));
+        assertEquals("<prefix> <gray><rule> in <world>: <state>.</gray>",
+            installed.getString("rule-changed"));
+        assertEquals("physics running", installed.getString("state-on"));
+        assertEquals("custom disabled wording", installed.getString("state-off"));
         assertEquals("new label", installed.getString("new-rule"));
     }
 

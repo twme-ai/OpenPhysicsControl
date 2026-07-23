@@ -13,13 +13,15 @@ OpenPhysicsControl 是從零撰寫、採 MIT 授權的 Bukkit 世界物理控制
 
 71 項規則可按世界獨立控制，涵蓋方塊與流體、火焰與氣候、植物生長、實體物理、紅石以及自動化方塊。所有規則預設開啟，狀態儲存在 `plugins/OpenPhysicsControl/worlds/<world-uuid>.yml`。完整事件來源及測試狀態見 [`docs/physics-matrix.md`](docs/physics-matrix.md)。
 
-`/opc` 開啟 GUI，亦可使用 `/openphysics`、`/ophysics` 或 `/pc`。其他指令：
+`/opc` 開啟置中的物理分類選單，選擇分類後才會顯示該組規則；亦可使用 `/openphysics`、`/ophysics` 或 `/pc`。其他指令：
 
 ```text
 /opc set <rule> <on|off|toggle> [world]
 /opc language [auto|en|zh_tw]
 /opc reload
 ```
+
+指令狀態以物理本身為準：`on` 代表物理正常運作，`off` 代表停止該項物理，`toggle` 則在兩者間切換。
 
 玩家未指定語言時會依 Minecraft client locale 選擇英文或繁體中文，偏好持久化在 `player-languages.yml`。訊息檔位於 `lang/*.yml` 並使用 MiniMessage 格式。
 
