@@ -3,6 +3,8 @@ package dev.openphysicscontrol;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.data.type.MangrovePropagule;
 import org.bukkit.entity.FallingBlock;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.EventHandler;
@@ -82,6 +84,26 @@ public final class PhysicsEvents implements Listener {
 
     private boolean disabled(World world, Rule rule) {
         return !this.rules.enabled(world, rule);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void naturalMangroveMaturation(BlockPhysicsEvent event) {
+        Block block = event.getBlock();
+        if (block.getType() != Material.MANGROVE_PROPAGULE
+            || event.getChangedType() != Material.MANGROVE_PROPAGULE
+            || !disabled(block.getWorld(), Rule.TREE_GROWTH)
+            || !event.getSourceBlock().equals(block)) return;
+
+        if (!(block.getBlockData() instanceof MangrovePropagule current)
+            || !current.isHanging()
+            || current.getAge() == 0
+            || !NaturalTickOrigin.isMangrovePropaguleMaturation()) return;
+
+        // Bukkit exposes this event after the age is written, so restore the preceding state without recursion.
+        MangrovePropagule previous = (MangrovePropagule) current.clone();
+        previous.setAge(current.getAge() - 1);
+        block.setBlockData(previous, false);
+        event.setCancelled(true);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)

@@ -41,6 +41,8 @@ final class PhysicsClassifierTest {
         assertEquals(Rule.VERTICAL_PLANT_GROWTH, PhysicsClassifier.grow(Material.SUGAR_CANE, Material.SUGAR_CANE));
         assertEquals(Rule.VINE_GROWTH, PhysicsClassifier.grow(Material.CAVE_VINES, Material.CAVE_VINES));
         assertEquals(Rule.MUSHROOM_GROWTH, PhysicsClassifier.grow(Material.RED_MUSHROOM, Material.RED_MUSHROOM));
+        assertEquals(Rule.TREE_GROWTH,
+            PhysicsClassifier.grow(Material.MANGROVE_PROPAGULE, Material.MANGROVE_PROPAGULE));
         assertEquals(Rule.AMETHYST_GROWTH,
             PhysicsClassifier.grow(Material.SMALL_AMETHYST_BUD, Material.MEDIUM_AMETHYST_BUD));
         assertEquals(Rule.DRIPSTONE_GROWTH,

@@ -29,7 +29,7 @@ OpenPhysicsControl 是從零撰寫、採 MIT 授權的 Bukkit 世界物理控制
 
 - 種在地面後自然長成紅樹，由 `tree-growth`（GUI「樹木生長」）控制。
 - 使用骨粉催生時，`bone-meal` 可以直接停止；若骨粉已允許，長成樹仍同時受 `tree-growth` 控制。
-- 懸掛在紅樹林樹葉下方的胎生苗由 age 0 成熟至 age 4，目前沒有可有效取消的 Paper/Spigot 生長事件，因此 71 項規則中沒有能停止這段成熟過程的選項。
+- 懸掛在紅樹林樹葉下方的胎生苗由 age 0 自然成熟至 age 4，同樣由 `tree-growth` 控制；`off` 會將每次自然成熟安全回復至原 age。指令直接設定 age 不受影響，骨粉催熟仍由 `bone-meal` 控制。
 
 玩家未指定語言時會依 Minecraft client locale 選擇英文或繁體中文，偏好持久化在 `player-languages.yml`。訊息檔位於 `lang/*.yml` 並使用 MiniMessage 格式。
 

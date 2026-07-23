@@ -56,6 +56,7 @@ final class PhysicsClassifier {
         String oldName = from.name();
         String newName = to.name();
         if (oldName.equals("TURTLE_EGG") || newName.equals("TURTLE_EGG")) return Rule.TURTLE_EGG_HATCH;
+        if (oldName.equals("MANGROVE_PROPAGULE") || newName.equals("MANGROVE_PROPAGULE")) return Rule.TREE_GROWTH;
         if (isAmethyst(oldName) || isAmethyst(newName)) return Rule.AMETHYST_GROWTH;
         if (oldName.equals("POINTED_DRIPSTONE") || newName.equals("POINTED_DRIPSTONE")) return Rule.DRIPSTONE_GROWTH;
         if (CROPS.contains(oldName) || CROPS.contains(newName)) return Rule.CROP_GROWTH;

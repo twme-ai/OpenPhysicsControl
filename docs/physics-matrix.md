@@ -1,6 +1,6 @@
 # Minecraft physics coverage
 
-This audit defines "physics" as autonomous world simulation, physical entity effects, and block-machine processing that can be controlled through portable Bukkit events. The inventory was derived from the Paper 26.2 and Spigot 26.2 API event classes under `block`, `world`, `weather`, relevant `entity`, and `inventory` packages.
+This audit defines "physics" as autonomous world simulation, physical entity effects, and block-machine processing that can be controlled through Bukkit event surfaces. Most rows use portable Bukkit events; hanging mangrove propagules use a narrowly scoped post-change rollback gated by the verified server random-tick call origin. The inventory was derived from the Paper 26.2 and Spigot 26.2 API event classes under `block`, `world`, `weather`, relevant `entity`, and `inventory` packages.
 
 It intentionally excludes direct block break/place and inventory actions (protection-plugin scope), commands and custom plugin mutations, client-side collision prediction, chunk generation, and mob AI movement for which Spigot has no portable cancellable event. All rules are enabled by default.
 
@@ -61,7 +61,7 @@ Evidence codes:
 | `vertical-plant-growth` | `BlockGrowEvent`, `BlockSpreadEvent`, `StructureGrowEvent` | Sugar cane, cactus, bamboo, kelp, and chorus | UT |
 | `vine-growth` | `BlockGrowEvent`, `BlockSpreadEvent` | Vines, cave vines, twisting/weeping vines, and glow lichen | UT |
 | `mushroom-growth` | `BlockGrowEvent`, `BlockSpreadEvent`, `StructureGrowEvent` | Small mushrooms and giant mushrooms/fungi | UT |
-| `tree-growth` | `StructureGrowEvent` | All tree species exposed by `TreeType`, including planted mangrove propagules | UT |
+| `tree-growth` | `StructureGrowEvent`, natural-origin `BlockPhysicsEvent` rollback | All tree species exposed by `TreeType`, planted mangrove propagules, and natural age 0-to-4 maturation of hanging propagules | MF, UT |
 | `plant-spread` | `BlockSpreadEvent` | Grass, mycelium, and other remaining plant spread | UT |
 | `sculk-spread` | `SculkBloomEvent`, `BlockSpreadEvent` | Sculk catalyst bloom and sculk placement | UT |
 | `amethyst-growth` | `BlockGrowEvent`, `BlockSpreadEvent` | Amethyst bud and cluster stages | UT |
@@ -124,6 +124,5 @@ The following surfaces were inspected but are not presented as world-physics rul
 | Generic combat/effects | attacks, potions, poison, magic, armor, death, resurrection | Gameplay/combat scope. Only environmental fall/drowning and knockback controls are included. |
 | Explicit travel and posture | player teleport, portal entry, mounting, swimming/gliding toggles | Direct entity/player action rather than autonomous world simulation; portal *creation* remains covered. |
 | Chunk generation and data packs | terrain noise, carvers, structures generated with chunks | Occurs during generation rather than runtime physics and cannot be reversed safely by an event cancellation plugin. |
-| Unexposed block growth | Hanging mangrove propagule maturation from age 0 to 4 | Paper and Spigot change the block state directly. A post-change `BlockPhysicsEvent` is observable, but cancelling it does not revert the age change, and no cancellable pre-change growth event is exposed. |
 | Paper-only mechanics | `EntityMoveEvent`, `EntityInsideBlockEvent`, compost and dragon-egg Paper events | Excluded from the shared core where no equivalent Spigot 26.2 event exists. Portable Bukkit fallbacks are used when available. |
 | Pure presentation | sounds, particles, block display state, maps, signs | No physical state transition. Bell and note-block activation are included because they are redstone-driven machine outputs. |

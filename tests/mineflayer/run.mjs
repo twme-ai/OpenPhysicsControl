@@ -431,6 +431,37 @@ async function testPistons () {
   console.log('PASS pistons')
 }
 
+async function testHangingMangroveMaturation () {
+  const position = [27, 105, 0]
+  await commands(
+    'gamerule minecraft:random_tick_speed 0',
+    'opc set tree-growth off world',
+    'setblock 27 106 0 minecraft:mangrove_leaves[persistent=true]',
+    'setblock 27 105 0 minecraft:mangrove_propagule[age=0,hanging=true,stage=0,waterlogged=false]',
+    'gamerule minecraft:random_tick_speed 3000'
+  )
+  await delay(1400)
+  assert.equal(Number((await block(...position)).getProperties().age), 0,
+    'tree growth off: hanging mangrove propagule matured')
+
+  await commands(
+    'gamerule minecraft:random_tick_speed 0',
+    'setblock 27 105 0 minecraft:mangrove_propagule[age=2,hanging=true,stage=0,waterlogged=false]'
+  )
+  assert.equal(Number((await block(...position)).getProperties().age), 2,
+    'tree growth off: explicit block-state command was reverted')
+
+  await commands(
+    'opc set tree-growth on world',
+    'gamerule minecraft:random_tick_speed 3000'
+  )
+  await delay(1400)
+  assert.equal(Number((await block(...position)).getProperties().age), 4,
+    'tree growth on: hanging mangrove propagule did not mature')
+  await commands('gamerule minecraft:random_tick_speed 3')
+  console.log('PASS hanging mangrove propagule maturation')
+}
+
 async function testExplosionDamage () {
   await commands(
     'opc set tnt-prime on world',
@@ -524,6 +555,7 @@ async function start () {
   await testTntPriming()
   await testRedstone()
   await testPistons()
+  await testHangingMangroveMaturation()
   await testExplosionDamage()
   console.log(`PASS Mineflayer suite on Paper ${TEST_VERSION} build ${PAPER_BUILD}`)
 }

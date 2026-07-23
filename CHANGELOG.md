@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.3.0 - 2026-07-23
+
+- Made `tree-growth` stop the natural age 0-to-4 maturation of hanging mangrove propagules.
+- Kept explicit block-state changes and `bone-meal` behavior independent from the natural maturation control.
+- Added a Mineflayer black-box test for blocked and enabled hanging-propagule maturation.
+
 ## 2.2.0 - 2026-07-23
 
 - Added `default-rules.yml` with explicit defaults for every physics rule.
