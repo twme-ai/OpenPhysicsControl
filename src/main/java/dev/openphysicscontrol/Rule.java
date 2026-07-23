@@ -5,63 +5,63 @@ import org.bukkit.Material;
 import java.util.Locale;
 
 public enum Rule {
-    GRAVITY(Group.BLOCKS, Material.SAND),
-    BLOCK_UPDATES(Group.BLOCKS, Material.OBSERVER),
-    WATER_FLOW(Group.BLOCKS, Material.WATER_BUCKET),
-    LAVA_FLOW(Group.BLOCKS, Material.LAVA_BUCKET),
-    FLUID_REACTIONS(Group.BLOCKS, Material.OBSIDIAN),
-    CONCRETE_HARDEN(Group.BLOCKS, Material.WHITE_CONCRETE),
-    PISTONS(Group.BLOCKS, Material.PISTON),
-    SPONGE_ABSORB(Group.BLOCKS, Material.SPONGE),
-    DRAGON_EGG_TELEPORT(Group.BLOCKS, Material.DRAGON_EGG),
-    PORTAL_CREATION(Group.BLOCKS, Material.OBSIDIAN),
-    REDSTONE(Group.BLOCKS, Material.REDSTONE),
-    SCULK_VIBRATIONS(Group.BLOCKS, Material.SCULK_SENSOR),
-    TNT_PRIME(Group.BLOCKS, Material.TNT),
-    EXPLOSION_BLOCK_DAMAGE(Group.BLOCKS, Material.GUNPOWDER),
+    GRAVITY(Group.GRAVITY_AND_LIQUIDS, Material.SAND),
+    BLOCK_UPDATES(Group.BUILDING, Material.OBSERVER),
+    WATER_FLOW(Group.GRAVITY_AND_LIQUIDS, Material.WATER_BUCKET),
+    LAVA_FLOW(Group.GRAVITY_AND_LIQUIDS, Material.LAVA_BUCKET),
+    FLUID_REACTIONS(Group.GRAVITY_AND_LIQUIDS, Material.OBSIDIAN),
+    CONCRETE_HARDEN(Group.BUILDING, Material.WHITE_CONCRETE),
+    PISTONS(Group.BUILDING, Material.PISTON),
+    SPONGE_ABSORB(Group.BUILDING, Material.SPONGE),
+    DRAGON_EGG_TELEPORT(Group.ENTITIES, Material.DRAGON_EGG),
+    PORTAL_CREATION(Group.BUILDING, Material.OBSIDIAN),
+    REDSTONE(Group.BUILDING, Material.REDSTONE),
+    SCULK_VIBRATIONS(Group.BUILDING, Material.SCULK_SENSOR),
+    TNT_PRIME(Group.BUILDING, Material.TNT),
+    EXPLOSION_BLOCK_DAMAGE(Group.BUILDING, Material.GUNPOWDER),
 
-    FIRE_SPREAD(Group.CLIMATE, Material.FLINT_AND_STEEL),
-    FIRE_BURN(Group.CLIMATE, Material.CAMPFIRE),
-    FIRE_IGNITE(Group.CLIMATE, Material.FIRE_CHARGE),
-    FIRE_EXTINGUISH(Group.CLIMATE, Material.SOUL_CAMPFIRE),
-    ICE_MELT(Group.CLIMATE, Material.ICE),
-    SNOW_MELT(Group.CLIMATE, Material.SNOW_BLOCK),
-    FROSTED_ICE(Group.CLIMATE, Material.PACKED_ICE),
-    CORAL_FADE(Group.CLIMATE, Material.BRAIN_CORAL),
-    GROUND_FADE(Group.CLIMATE, Material.GRASS_BLOCK),
-    COPPER_WEATHER(Group.CLIMATE, Material.COPPER_BLOCK),
-    NATURAL_BLOCK_FORM(Group.CLIMATE, Material.POWDER_SNOW_BUCKET),
-    FARMLAND_DRY(Group.CLIMATE, Material.FARMLAND),
-    CAULDRON_CHANGES(Group.CLIMATE, Material.CAULDRON),
-    WEATHER(Group.CLIMATE, Material.WATER_BUCKET),
-    THUNDER(Group.CLIMATE, Material.LIGHTNING_ROD),
-    LIGHTNING(Group.CLIMATE, Material.LIGHTNING_ROD),
-    TIME_SKIP(Group.CLIMATE, Material.CLOCK),
+    FIRE_SPREAD(Group.WORLD, Material.FLINT_AND_STEEL),
+    FIRE_BURN(Group.WORLD, Material.CAMPFIRE),
+    FIRE_IGNITE(Group.WORLD, Material.FIRE_CHARGE),
+    FIRE_EXTINGUISH(Group.WORLD, Material.SOUL_CAMPFIRE),
+    ICE_MELT(Group.WORLD, Material.ICE),
+    SNOW_MELT(Group.WORLD, Material.SNOW_BLOCK),
+    FROSTED_ICE(Group.WORLD, Material.PACKED_ICE),
+    CORAL_FADE(Group.WORLD, Material.BRAIN_CORAL),
+    GROUND_FADE(Group.WORLD, Material.GRASS_BLOCK),
+    COPPER_WEATHER(Group.WORLD, Material.COPPER_BLOCK),
+    NATURAL_BLOCK_FORM(Group.WORLD, Material.POWDER_SNOW_BUCKET),
+    FARMLAND_DRY(Group.WORLD, Material.FARMLAND),
+    CAULDRON_CHANGES(Group.WORLD, Material.CAULDRON),
+    WEATHER(Group.WORLD, Material.WATER_BUCKET),
+    THUNDER(Group.WORLD, Material.LIGHTNING_ROD),
+    LIGHTNING(Group.WORLD, Material.LIGHTNING_ROD),
+    TIME_SKIP(Group.WORLD, Material.CLOCK),
+    LEAF_DECAY(Group.WORLD, Material.OAK_LEAVES),
 
-    LEAF_DECAY(Group.GROWTH, Material.OAK_LEAVES),
-    CROP_GROWTH(Group.GROWTH, Material.WHEAT),
-    STEM_GROWTH(Group.GROWTH, Material.PUMPKIN),
-    VERTICAL_PLANT_GROWTH(Group.GROWTH, Material.SUGAR_CANE),
-    VINE_GROWTH(Group.GROWTH, Material.VINE),
-    MUSHROOM_GROWTH(Group.GROWTH, Material.RED_MUSHROOM),
-    TREE_GROWTH(Group.GROWTH, Material.OAK_SAPLING),
-    PLANT_SPREAD(Group.GROWTH, Material.GRASS_BLOCK),
-    SCULK_SPREAD(Group.GROWTH, Material.SCULK),
-    AMETHYST_GROWTH(Group.GROWTH, Material.AMETHYST_CLUSTER),
-    DRIPSTONE_GROWTH(Group.GROWTH, Material.POINTED_DRIPSTONE),
-    TURTLE_EGG_HATCH(Group.GROWTH, Material.TURTLE_EGG),
-    FROGSPAWN_HATCH(Group.GROWTH, Material.FROGSPAWN),
-    BONE_MEAL(Group.GROWTH, Material.BONE_MEAL),
+    CROP_GROWTH(Group.SMALL_PLANTS, Material.WHEAT),
+    STEM_GROWTH(Group.SMALL_PLANTS, Material.PUMPKIN),
+    VERTICAL_PLANT_GROWTH(Group.TALL_GROWTH, Material.SUGAR_CANE),
+    VINE_GROWTH(Group.TALL_GROWTH, Material.VINE),
+    MUSHROOM_GROWTH(Group.SMALL_PLANTS, Material.RED_MUSHROOM),
+    TREE_GROWTH(Group.TALL_GROWTH, Material.OAK_SAPLING),
+    PLANT_SPREAD(Group.SMALL_PLANTS, Material.GRASS_BLOCK),
+    SCULK_SPREAD(Group.SMALL_PLANTS, Material.SCULK),
+    AMETHYST_GROWTH(Group.SMALL_PLANTS, Material.AMETHYST_CLUSTER),
+    DRIPSTONE_GROWTH(Group.TALL_GROWTH, Material.POINTED_DRIPSTONE),
+    TURTLE_EGG_HATCH(Group.SMALL_PLANTS, Material.TURTLE_EGG),
+    FROGSPAWN_HATCH(Group.SMALL_PLANTS, Material.FROGSPAWN),
+    BONE_MEAL(Group.SMALL_PLANTS, Material.BONE_MEAL),
 
-    MOB_GRIEFING(Group.ENTITIES, Material.CREEPER_HEAD),
-    MOB_BLOCK_FORM(Group.ENTITIES, Material.SNOW_BLOCK),
-    FARMLAND_TRAMPLE(Group.ENTITIES, Material.LEATHER_BOOTS),
-    TURTLE_EGG_TRAMPLE(Group.ENTITIES, Material.TURTLE_HELMET),
-    DRIPLEAF_TILT(Group.ENTITIES, Material.BIG_DRIPLEAF),
-    NATURAL_MOB_SPAWNING(Group.ENTITIES, Material.ZOMBIE_SPAWN_EGG),
-    MOB_BREEDING(Group.ENTITIES, Material.WHEAT),
-    MOB_TRANSFORM(Group.ENTITIES, Material.ROTTEN_FLESH),
-    BEEHIVE_ENTRY(Group.ENTITIES, Material.BEEHIVE),
+    MOB_GRIEFING(Group.MOBS, Material.CREEPER_HEAD),
+    MOB_BLOCK_FORM(Group.MOBS, Material.SNOW_BLOCK),
+    FARMLAND_TRAMPLE(Group.PLAYERS, Material.LEATHER_BOOTS),
+    TURTLE_EGG_TRAMPLE(Group.PLAYERS, Material.TURTLE_HELMET),
+    DRIPLEAF_TILT(Group.PLAYERS, Material.BIG_DRIPLEAF),
+    NATURAL_MOB_SPAWNING(Group.MOBS, Material.ZOMBIE_SPAWN_EGG),
+    MOB_BREEDING(Group.MOBS, Material.WHEAT),
+    MOB_TRANSFORM(Group.MOBS, Material.ROTTEN_FLESH),
+    BEEHIVE_ENTRY(Group.MOBS, Material.BEEHIVE),
     ITEM_DESPAWN(Group.ENTITIES, Material.CLOCK),
     ITEM_MERGE(Group.ENTITIES, Material.HOPPER),
     PROJECTILE_LAUNCH(Group.ENTITIES, Material.ARROW),
@@ -69,8 +69,8 @@ public enum Rule {
     FALL_DAMAGE(Group.ENTITIES, Material.FEATHER),
     KNOCKBACK(Group.ENTITIES, Material.SHIELD),
     DROWNING_DAMAGE(Group.ENTITIES, Material.WATER_BUCKET),
-    HUNGER(Group.ENTITIES, Material.ROTTEN_FLESH),
-    NATURAL_REGEN(Group.ENTITIES, Material.GOLDEN_APPLE),
+    HUNGER(Group.PLAYERS, Material.ROTTEN_FLESH),
+    NATURAL_REGEN(Group.PLAYERS, Material.GOLDEN_APPLE),
 
     DISPENSERS(Group.MACHINES, Material.DISPENSER),
     HOPPERS(Group.MACHINES, Material.HOPPER),
@@ -110,24 +110,34 @@ public enum Rule {
     }
 
     public enum Group {
-        BLOCKS(Material.PISTON),
-        CLIMATE(Material.LIGHTNING_ROD),
-        GROWTH(Material.OAK_SAPLING),
-        ENTITIES(Material.CREEPER_HEAD),
-        MACHINES(Material.CRAFTER);
+        MOBS(Material.ZOMBIE_HEAD, 3),
+        PLAYERS(Material.PLAYER_HEAD, 4),
+        ENTITIES(Material.ARROW, 5),
+        BUILDING(Material.LADDER, 11),
+        GRAVITY_AND_LIQUIDS(Material.SAND, 12),
+        WORLD(Material.OAK_LEAVES, 13),
+        SMALL_PLANTS(Material.MELON, 14),
+        TALL_GROWTH(Material.BIRCH_SAPLING, 15),
+        MACHINES(Material.CRAFTER, 22);
 
         private final Material icon;
+        private final int slot;
 
-        Group(Material icon) {
+        Group(Material icon, int slot) {
             this.icon = icon;
+            this.slot = slot;
         }
 
         public Material icon() {
             return this.icon;
         }
 
+        public int slot() {
+            return this.slot;
+        }
+
         public String messageKey() {
-            return "group-" + name().toLowerCase(Locale.ROOT);
+            return "group-" + name().toLowerCase(Locale.ROOT).replace('_', '-');
         }
     }
 }

@@ -94,10 +94,8 @@ public final class RulesMenu implements InventoryHolder {
 
     private void populateCategories() {
         Rule.Group[] groups = Rule.Group.values();
-        List<Integer> positions = centeredSlots(groups.length, 1);
-        for (int index = 0; index < groups.length; index++) {
-            Rule.Group category = groups[index];
-            int slot = positions.get(index);
+        for (Rule.Group category : groups) {
+            int slot = category.slot();
             this.groupSlots.put(slot, category);
             setCategory(slot, category);
         }
@@ -170,6 +168,10 @@ public final class RulesMenu implements InventoryHolder {
             addCenteredRow(slots, firstRow + row, rowSize);
         }
         return List.copyOf(slots);
+    }
+
+    static List<Integer> categorySlots() {
+        return Arrays.stream(Rule.Group.values()).map(Rule.Group::slot).toList();
     }
 
     private static void addCenteredRow(List<Integer> slots, int row, int itemCount) {

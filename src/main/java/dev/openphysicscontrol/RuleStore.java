@@ -121,6 +121,7 @@ public final class RuleStore {
         }
         File named = new File(directory, worldFileName(world.getName()));
         File legacy = new File(directory, world.getUID() + ".yml");
+        migrateLegacyPhysicsControl(world, named, legacy);
         boolean migration = !named.exists() && legacy.isFile();
         try {
             File resolved = resolveWorldFile(directory, world.getName(), world.getUID());
@@ -131,6 +132,32 @@ public final class RuleStore {
             return resolved;
         } catch (IOException exception) {
             throw new IllegalStateException("Unable to migrate world rules for " + world.getName(), exception);
+        }
+    }
+
+    private void migrateLegacyPhysicsControl(World world, File named, File uuidFile) {
+        if (named.exists() || uuidFile.isFile()) return;
+        File pluginsDirectory = this.plugin.getDataFolder().getParentFile();
+        if (pluginsDirectory == null) return;
+        try {
+            LegacyPhysicsControlMigrator.MigrationResult result = LegacyPhysicsControlMigrator.migrate(
+                pluginsDirectory, world.getName(), named);
+            if (!result.sourceFound()) return;
+            if (result.importedRules() == 0) {
+                this.plugin.getLogger().warning("Found legacy PhysicsControl settings for world " + world.getName()
+                    + " but no supported rules to import from " + result.source().getPath() + ".");
+            } else {
+                this.plugin.getLogger().info("Imported " + result.importedRules()
+                    + " rule values for world " + world.getName() + " from legacy PhysicsControl settings "
+                    + result.source().getPath() + ". The source file was preserved.");
+            }
+            if (!result.unsupportedTriggers().isEmpty()) {
+                this.plugin.getLogger().warning("Legacy PhysicsControl triggers without a matching OpenPhysicsControl rule"
+                    + " for world " + world.getName() + ": "
+                    + String.join(", ", result.unsupportedTriggers()) + ".");
+            }
+        } catch (IOException exception) {
+            throw new IllegalStateException("Unable to migrate legacy PhysicsControl rules for " + world.getName(), exception);
         }
     }
 

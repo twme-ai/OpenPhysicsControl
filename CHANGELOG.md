@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.4.0 - 2026-07-23
+
+- Added automatic per-world migration from Dymeth PhysicsControl, including its pre-1.1 data layout and historical bone-meal trigger name.
+- Preserved legacy source files, protected existing OpenPhysicsControl world files, and report unsupported legacy triggers clearly.
+- Reorganized the GUI into the legacy-inspired three-row interaction, world, growth, and machines layout.
+
 ## 2.3.0 - 2026-07-23
 
 - Made `tree-growth` stop the natural age 0-to-4 maturation of hanging mangrove propagules.

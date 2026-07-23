@@ -49,6 +49,16 @@ final class ResourceTest {
     }
 
     @Test
+    void localesLabelEveryMenuGroup() {
+        for (String locale : LOCALES) {
+            Map<String, Object> phrases = yaml("lang/" + locale + ".yml");
+            for (Rule.Group group : Rule.Group.values()) {
+                assertNotNull(phrases.get(group.messageKey()), locale + ":" + group.messageKey());
+            }
+        }
+    }
+
+    @Test
     void defaultRulesCoverEveryPhysicsRule() {
         Map<String, Object> defaults = yaml("default-rules.yml");
         Set<String> expected = Arrays.stream(Rule.values()).map(Rule::key).collect(Collectors.toSet());

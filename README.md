@@ -1,6 +1,6 @@
 # OpenPhysicsControl
 
-OpenPhysicsControl 是從零撰寫、採 MIT 授權的 Bukkit 世界物理控制插件。它不編譯、打包或引用 Dymeth/PhysicsControl 的原始碼；原專案僅作為產品需求背景。
+OpenPhysicsControl 是從零撰寫、採 MIT 授權的 Bukkit 世界物理控制插件。它不編譯、打包或引用 Dymeth/PhysicsControl 的原始碼；該專案僅作為資料遷移相容目標與選單資訊架構參考。
 
 ## 平台
 
@@ -13,7 +13,7 @@ OpenPhysicsControl 是從零撰寫、採 MIT 授權的 Bukkit 世界物理控制
 
 71 項規則可按世界獨立控制，涵蓋方塊與流體、火焰與氣候、植物生長、實體物理、紅石以及自動化方塊。預設值位於 `plugins/OpenPhysicsControl/default-rules.yml`，各世界狀態儲存在 `plugins/OpenPhysicsControl/worlds/<世界名稱>.yml`。完整事件來源及測試狀態見 [`docs/physics-matrix.md`](docs/physics-matrix.md)。
 
-`/opc` 開啟置中的物理分類選單，選擇分類後才會顯示該組規則；亦可使用 `/openphysics`、`/ophysics` 或 `/pc`。其他指令：
+`/opc` 開啟三列固定位置的物理分類選單，選擇分類後才會顯示該組規則；分類布局延續舊版熟悉的互動、建造、重力與流體、世界、生長區域，並加入機械分類。亦可使用 `/openphysics`、`/ophysics` 或 `/pc`。其他指令：
 
 ```text
 /opc set <rule> <on|off|toggle> [world]
@@ -24,6 +24,10 @@ OpenPhysicsControl 是從零撰寫、採 MIT 授權的 Bukkit 世界物理控制
 指令狀態以物理本身為準：`on` 代表物理正常運作，`off` 代表停止該項物理，`toggle` 則在兩者間切換。
 
 `default-rules.yml` 會在首次啟動時產生，並列出全部規則；`true` 代表物理運作，`false` 代表停止。世界檔已有的值優先，只有新世界或世界檔缺少的規則才採用預設值。從舊版升級時，插件會在同名世界檔尚不存在的前提下，自動將 `<world-uuid>.yml` 搬移為 `<世界名稱>.yml`，不會覆寫既有名稱檔。世界名稱中的路徑或系統保留字元會以百分比編碼。
+
+## 從 Dymeth PhysicsControl 遷移
+
+保留 `plugins/PhysicsControl` 資料目錄、移除舊 JAR 並安裝 OpenPhysicsControl 後，插件會在每個世界首次載入時自動匯入舊版設定。來源檔會保留，既有 OpenPhysicsControl 世界檔不會被覆寫。完整的資料位置、規則對照、聚合規則的保守 `false` 優先策略與無對應選項見 [`docs/migration-from-dymeth-physicscontrol.md`](docs/migration-from-dymeth-physicscontrol.md)。
 
 紅樹林胎生苗分成三種行為：
 

@@ -151,10 +151,22 @@ async function testRuleStorage (serverDir) {
   assert.deepEqual(worldFiles, ['world.yml', 'world_nether.yml', 'world_the_end.yml'])
   for (const file of worldFiles) {
     const rules = await readFile(join(dataDirectory, 'worlds', file), 'utf8')
-    assert.match(rules, /^gravity: true$/m, `${file} did not inherit a missing true default`)
     assert.match(rules, /^note-blocks: false$/m, `${file} did not inherit the configured false default`)
+    if (file === 'world.yml') {
+      assert.match(rules, /^gravity: false$/m, 'legacy gravity setting was not imported')
+      assert.match(rules, /^bone-meal: false$/m, 'legacy bone meal alias was not imported')
+    } else if (file === 'world_nether.yml') {
+      assert.match(rules, /^crop-growth: false$/m, 'pre-1.1 legacy world section was not imported')
+      assert.match(rules, /^gravity: true$/m, `${file} did not inherit a missing true default`)
+    } else {
+      assert.match(rules, /^gravity: true$/m, `${file} did not inherit a missing true default`)
+    }
   }
-  console.log('PASS default rules and world-name storage')
+  const legacySource = await readFile(join(serverDir, 'plugins/PhysicsControl/triggers/world.yml'), 'utf8')
+  assert.equal(legacySource, 'GRAVEL_FALLING: false\nBONE_MEAL_USAGE: false\n')
+  const legacyConfig = await readFile(join(serverDir, 'plugins/PhysicsControl/config.yml'), 'utf8')
+  assert.equal(legacyConfig, 'world_nether:\n  WHEAT_GROWING: false\n')
+  console.log('PASS default rules, legacy migration, and world-name storage')
 }
 
 async function testLocalizedMenu () {
@@ -168,37 +180,62 @@ async function testLocalizedMenu () {
   await delay(300)
   assert.match(windowTitle(categoryMenu), /物理分類/)
   assert.equal(categoryMenu.inventoryStart, 27, 'category menu is not three rows')
-  assert.deepEqual(occupiedSlots(categoryMenu), [11, 12, 13, 14, 15], 'categories are not centered')
-  assert.match(itemText(categoryMenu.slots[11]), /運作中/)
-  assert.match(itemText(categoryMenu.slots[11]), /已停止/)
+  assert.deepEqual(occupiedSlots(categoryMenu), [3, 4, 5, 11, 12, 13, 14, 15, 22],
+    'categories do not use the expected three-row layout')
+  assert.match(itemText(categoryMenu.slots[3]), /運作中/)
+  assert.match(itemText(categoryMenu.slots[3]), /已停止/)
 
   const categories = [
     {
+      slot: 3,
+      title: /生物互動/,
+      size: 18,
+      rules: [1, 2, 3, 5, 6, 7]
+    },
+    {
+      slot: 4,
+      title: /玩家互動/,
+      size: 18,
+      rules: [2, 3, 4, 5, 6]
+    },
+    {
+      slot: 5,
+      title: /實體效果/,
+      size: 18,
+      rules: [0, 1, 2, 3, 5, 6, 7, 8]
+    },
+    {
       slot: 11,
-      title: /方塊與訊號/,
-      size: 27,
-      rules: [1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 16]
+      title: /建造與訊號/,
+      size: 18,
+      rules: Array.from({ length: 9 }, (_, slot) => slot)
     },
     {
       slot: 12,
-      title: /火焰、氣候與時間/,
-      size: 27,
-      rules: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17]
+      title: /重力與流體/,
+      size: 18,
+      rules: [2, 3, 5, 6]
     },
     {
       slot: 13,
-      title: /植物與生長/,
-      size: 27,
-      rules: [1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 16]
-    },
-    {
-      slot: 14,
-      title: /實體與玩家/,
+      title: /世界與氣候/,
       size: 27,
       rules: Array.from({ length: 18 }, (_, slot) => slot)
     },
     {
+      slot: 14,
+      title: /小型植物與生長/,
+      size: 18,
+      rules: Array.from({ length: 9 }, (_, slot) => slot)
+    },
+    {
       slot: 15,
+      title: /藤蔓與高大生長/,
+      size: 18,
+      rules: [2, 3, 5, 6]
+    },
+    {
+      slot: 22,
       title: /機械與處理/,
       size: 18,
       rules: [0, 1, 2, 3, 5, 6, 7, 8]
@@ -236,12 +273,12 @@ async function testLocalizedMenu () {
     categoryMenu = await returnPromise
     await delay(250)
     assert.match(windowTitle(categoryMenu), /物理分類/)
-    assert.deepEqual(occupiedSlots(categoryMenu), [11, 12, 13, 14, 15])
+    assert.deepEqual(occupiedSlots(categoryMenu), [3, 4, 5, 11, 12, 13, 14, 15, 22])
   }
 
   bot.chat('/pc language auto')
   await delay(300)
-  console.log('PASS centered categorized menu and explicit states')
+  console.log('PASS legacy-inspired categorized menu and explicit states')
 }
 
 async function testGravity () {
@@ -488,7 +525,11 @@ async function start () {
   const serverDir = await mkdtemp(join(tmpdir(), 'openphysicscontrol-mineflayer-'))
   await mkdir(join(serverDir, 'plugins'), { recursive: true })
   await mkdir(join(serverDir, 'plugins/OpenPhysicsControl'), { recursive: true })
+  await mkdir(join(serverDir, 'plugins/PhysicsControl/triggers'), { recursive: true })
   await writeFile(join(serverDir, 'plugins/OpenPhysicsControl/default-rules.yml'), 'note-blocks: false\n')
+  await writeFile(join(serverDir, 'plugins/PhysicsControl/triggers/world.yml'),
+    'GRAVEL_FALLING: false\nBONE_MEAL_USAGE: false\n')
+  await writeFile(join(serverDir, 'plugins/PhysicsControl/config.yml'), 'world_nether:\n  WHEAT_GROWING: false\n')
   await copyFile(pluginJar, join(serverDir, 'plugins/OpenPhysicsControl.jar'))
   await copyFile(paperCache, join(serverDir, 'paper.jar'))
   await writeFile(join(serverDir, 'eula.txt'), 'eula=true\n')
@@ -514,6 +555,7 @@ async function start () {
   await waitForServer(/Enabling OpenPhysicsControl v[^\r\n]+/)
   await waitForServer(/Done \([^)]*\)!/)
   await testRuleStorage(serverDir)
+  await commands('opc set gravity on world', 'opc set bone-meal on world')
 
   await commands(
     'execute in minecraft:overworld run forceload add -16 -16 47 31'
