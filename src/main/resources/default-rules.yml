@@ -17,6 +17,7 @@ redstone: true
 sculk-vibrations: true
 tnt-prime: true
 explosion-block-damage: true
+entity-explosion-prime: true
 
 # Fire, climate, and time
 fire-spread: true
@@ -62,6 +63,7 @@ dripleaf-tilt: true
 end-portal-frame-filling: true
 glow-berry-picking: true
 natural-mob-spawning: true
+spawner-mob-spawning: true
 mob-breeding: true
 mob-transform: true
 beehive-entry: true
@@ -74,6 +76,10 @@ entity-combust: true
 fall-damage: true
 knockback: true
 drowning-damage: true
+oxygen-depletion: true
+fire-damage: true
+freeze-damage: true
+vehicle-entity-collision: true
 hunger: true
 natural-regen: true
 

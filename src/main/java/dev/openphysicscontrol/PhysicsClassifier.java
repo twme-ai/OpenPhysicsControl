@@ -2,6 +2,9 @@ package dev.openphysicscontrol;
 
 import org.bukkit.Material;
 import org.bukkit.TreeType;
+import org.bukkit.block.BlockState;
+import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.entity.EntityDamageByBlockEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 
 import java.util.Set;
@@ -97,12 +100,48 @@ final class PhysicsClassifier {
         };
     }
 
+    static Rule spawn(CreatureSpawnEvent.SpawnReason reason) {
+        return switch (reason) {
+            case NATURAL -> Rule.NATURAL_MOB_SPAWNING;
+            case SPAWNER, TRIAL_SPAWNER -> Rule.SPAWNER_MOB_SPAWNING;
+            default -> null;
+        };
+    }
+
+    static boolean oxygenDepletes(int currentAir, int nextAir) {
+        return nextAir < currentAir;
+    }
+
+    static Rule damage(EntityDamageEvent event) {
+        if (event.getCause() == EntityDamageEvent.DamageCause.CONTACT
+            && event instanceof EntityDamageByBlockEvent byBlock) {
+            Rule thermalContact = thermalContact(byBlock);
+            if (thermalContact != null) return thermalContact;
+        }
+        return damage(event.getCause());
+    }
+
     static Rule damage(EntityDamageEvent.DamageCause cause) {
         return switch (cause) {
             case FALL, FLY_INTO_WALL, FALLING_BLOCK -> Rule.FALL_DAMAGE;
             case DROWNING -> Rule.DROWNING_DAMAGE;
+            case FIRE, FIRE_TICK, MELTING, LAVA, HOT_FLOOR, CAMPFIRE -> Rule.FIRE_DAMAGE;
+            case FREEZE -> Rule.FREEZE_DAMAGE;
             default -> null;
         };
+    }
+
+    static Rule thermalContact(Material material) {
+        return switch (material) {
+            case MAGMA_BLOCK, CAMPFIRE, SOUL_CAMPFIRE -> Rule.FIRE_DAMAGE;
+            default -> null;
+        };
+    }
+
+    private static Rule thermalContact(EntityDamageByBlockEvent event) {
+        BlockState state = event.getDamagerBlockState();
+        if (state != null) return thermalContact(state.getType());
+        return event.getDamager() == null ? null : thermalContact(event.getDamager().getType());
     }
 
     private static boolean isConcretePowder(String name) {

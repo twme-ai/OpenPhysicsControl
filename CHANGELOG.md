@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.6.0 - 2026-07-23
+
+- Added independent controls for standard/trial spawner output, entity explosion priming, oxygen depletion, fire/heat damage, freezing damage, and vehicle-to-entity collision.
+- Kept oxygen recovery independent from oxygen depletion and kept ordinary contact damage outside the fire/heat rule.
+- Added Mineflayer coverage for normal spawners, oxygen, fire/freezing, and entity explosions, plus classifier and cross-API coverage for the shared event surfaces.
+
 ## 2.5.0 - 2026-07-23
 
 - Added independent controls for End portal frame filling and glow berry picking.

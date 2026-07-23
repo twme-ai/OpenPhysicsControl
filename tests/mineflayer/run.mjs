@@ -100,7 +100,8 @@ async function resetArea () {
     'execute in minecraft:overworld run fill -8 100 -8 30 116 8 air',
     'execute in minecraft:overworld run fill -8 99 -8 30 99 8 stone',
     'execute in minecraft:overworld run kill @e[type=minecraft:tnt]',
-    'execute in minecraft:overworld run kill @e[type=minecraft:arrow]'
+    'execute in minecraft:overworld run kill @e[type=minecraft:arrow]',
+    'execute in minecraft:overworld run kill @e[type=minecraft:armor_stand]'
   )
   await delay(500)
 }
@@ -112,6 +113,23 @@ function nextEvent (emitter, event, timeout = 5000) {
       clearTimeout(deadline)
       resolve(value)
     })
+  })
+}
+
+function nextChatMessage (pattern, timeout = 3000) {
+  return new Promise((resolve, reject) => {
+    const deadline = setTimeout(() => {
+      bot.off('messagestr', inspect)
+      reject(new Error(`Timeout waiting for chat message ${pattern}`))
+    }, timeout)
+    const inspect = message => {
+      const text = String(message)
+      if (!pattern.test(text)) return
+      clearTimeout(deadline)
+      bot.off('messagestr', inspect)
+      resolve(text)
+    }
+    bot.on('messagestr', inspect)
   })
 }
 
@@ -140,6 +158,29 @@ function itemText (item) {
     // The direct fields above are sufficient on older Mineflayer versions.
   }
   return values.filter(Boolean).join(' ')
+}
+
+function nearbyEntities (name) {
+  return Object.values(bot.entities).filter(entity => entity.name === name
+    && entity.position.distanceTo(bot.entity.position) < 16)
+}
+
+async function waitForNearbyEntity (name, timeout = 6000) {
+  const deadline = Date.now() + timeout
+  while (Date.now() < deadline) {
+    if (nearbyEntities(name).length > 0) return
+    await delay(100)
+  }
+  throw new Error(`No nearby ${name} appeared within ${timeout}ms`)
+}
+
+async function resetBotHealth () {
+  await commands(
+    'effect clear PhysicsBot',
+    'effect give PhysicsBot minecraft:instant_health 1 10 true'
+  )
+  await delay(300)
+  assert.equal(bot.health, 20, 'could not reset the test bot health')
 }
 
 async function testRuleStorage (serverDir) {
@@ -196,7 +237,7 @@ async function testLocalizedMenu () {
       slot: 3,
       title: /生物互動/,
       size: 18,
-      rules: [1, 2, 3, 5, 6, 7]
+      rules: [1, 2, 3, 4, 5, 6, 7]
     },
     {
       slot: 4,
@@ -207,14 +248,14 @@ async function testLocalizedMenu () {
     {
       slot: 5,
       title: /實體效果/,
-      size: 18,
-      rules: Array.from({ length: 9 }, (_, slot) => slot)
+      size: 27,
+      rules: [1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 14, 15, 16]
     },
     {
       slot: 11,
       title: /建造與訊號/,
-      size: 18,
-      rules: Array.from({ length: 9 }, (_, slot) => slot)
+      size: 27,
+      rules: [2, 3, 4, 5, 6, 11, 12, 13, 14, 15]
     },
     {
       slot: 12,
@@ -568,8 +609,7 @@ async function testGlowBerryPicking () {
 }
 
 function nearbyArrows () {
-  return Object.values(bot.entities).filter(entity => entity.name === 'arrow'
-    && entity.position.distanceTo(bot.entity.position) < 16)
+  return nearbyEntities('arrow')
 }
 
 async function launchArrowAtBlock () {
@@ -598,6 +638,7 @@ async function testBlockHitProjectileRemoval () {
 async function testExplosionDamage () {
   await commands(
     'opc set tnt-prime on world',
+    'opc set entity-explosion-prime on world',
     'opc set explosion-block-damage off world',
     'fill 20 99 -1 22 101 1 minecraft:white_wool',
     'summon minecraft:tnt 21 102 0 {fuse:0}'
@@ -613,6 +654,106 @@ async function testExplosionDamage () {
   await delay(5200)
   await expectNotBlock([21, 101, 0], 'white_wool', 'explosion block damage on')
   console.log('PASS explosion-block-damage')
+}
+
+async function testEntityExplosionPrime () {
+  await commands(
+    'opc set entity-explosion-prime off world',
+    'opc set explosion-block-damage on world',
+    'fill 20 99 -1 22 101 1 minecraft:white_wool',
+    'summon minecraft:tnt 21 102 0 {fuse:0}'
+  )
+  await delay(5200)
+  await expectBlock([21, 101, 0], 'white_wool', 'entity explosion priming off')
+
+  await commands(
+    'opc set entity-explosion-prime on world',
+    'fill 20 99 -1 22 101 1 minecraft:white_wool',
+    'summon minecraft:tnt 21 102 0 {fuse:0}'
+  )
+  await delay(5200)
+  await expectNotBlock([21, 101, 0], 'white_wool', 'entity explosion priming on')
+  await commands('kill @e[type=minecraft:tnt]')
+  console.log('PASS entity-explosion-prime')
+}
+
+async function testSpawnerMobSpawning () {
+  const spawner = 'minecraft:spawner{Delay:0s,MinSpawnDelay:0s,MaxSpawnDelay:0s,SpawnCount:1s,MaxNearbyEntities:99s,RequiredPlayerRange:16s,SpawnRange:1s,SpawnData:{entity:{id:"minecraft:armor_stand",Pos:[25.5d,100.0d,1.5d]}},SpawnPotentials:[{data:{entity:{id:"minecraft:armor_stand",Pos:[25.5d,100.0d,1.5d]}},weight:1}]}'
+  await commands(
+    'difficulty normal',
+    'gamerule spawner_blocks_work true',
+    'gamemode survival PhysicsBot',
+    'tp PhysicsBot 25 100 0',
+    'kill @e[type=minecraft:armor_stand]',
+    'opc set spawner-mob-spawning off world',
+    `setblock 25 100 3 ${spawner}`
+  )
+  await delay(2600)
+  assert.equal(nearbyEntities('armor_stand').length, 0,
+    'spawner mob spawning off: an armor stand was spawned')
+
+  await commands(
+    'setblock 25 100 3 air',
+    'kill @e[type=minecraft:armor_stand]',
+    'opc set spawner-mob-spawning on world',
+    `setblock 25 100 3 ${spawner}`
+  )
+  await waitForNearbyEntity('armor_stand')
+  await commands(
+    'setblock 25 100 3 air',
+    'kill @e[type=minecraft:armor_stand]',
+    'gamemode creative PhysicsBot',
+    'tp PhysicsBot 0 100 0',
+    'difficulty peaceful'
+  )
+  console.log('PASS spawner-mob-spawning')
+}
+
+async function testOxygenDepletion () {
+  async function airChangesWithOxygenRule (enabled) {
+    await commands(
+      `opc set oxygen-depletion ${enabled ? 'on' : 'off'} world`,
+      'fill 14 100 -1 16 103 1 minecraft:water',
+      'kill @e[type=minecraft:pig]',
+      'summon minecraft:pig 15 101 0 {NoAI:1b,Invulnerable:1b,Air:1s}'
+    )
+    await delay(800)
+    const expected = nextChatMessage(enabled ? /opc-oxygen-depleted/ : /opc-oxygen-preserved/)
+    command(enabled
+      ? 'execute as @e[type=minecraft:pig,limit=1] unless data entity @s {Air:1s} run tellraw PhysicsBot {"text":"opc-oxygen-depleted"}'
+      : 'execute as @e[type=minecraft:pig,limit=1] if data entity @s {Air:1s} run tellraw PhysicsBot {"text":"opc-oxygen-preserved"}')
+    await expected
+  }
+
+  await airChangesWithOxygenRule(false)
+  await airChangesWithOxygenRule(true)
+  await commands(
+    'kill @e[type=minecraft:pig]',
+    'fill 14 100 -1 16 103 1 air'
+  )
+  console.log('PASS oxygen-depletion')
+}
+
+async function testFireAndFreezeDamage () {
+  async function damageWithRule (rule, damageType, message) {
+    await commands('gamemode survival PhysicsBot', `opc set ${rule} off world`)
+    await resetBotHealth()
+    await commands(`damage PhysicsBot 4 minecraft:${damageType}`)
+    await delay(350)
+    assert.equal(bot.health, 20, `${message} off: the bot took damage`)
+
+    await commands(`opc set ${rule} on world`)
+    await resetBotHealth()
+    await commands(`damage PhysicsBot 4 minecraft:${damageType}`)
+    await delay(350)
+    assert.ok(bot.health < 20, `${message} on: the bot did not take damage`)
+  }
+
+  await damageWithRule('fire-damage', 'in_fire', 'fire damage')
+  await damageWithRule('freeze-damage', 'freeze', 'freezing damage')
+  await commands('gamemode creative PhysicsBot')
+  await resetBotHealth()
+  console.log('PASS fire-damage and freeze-damage')
 }
 
 async function start () {
@@ -697,6 +838,10 @@ async function start () {
   await testEndPortalFrameFilling()
   await testGlowBerryPicking()
   await testBlockHitProjectileRemoval()
+  await testSpawnerMobSpawning()
+  await testOxygenDepletion()
+  await testFireAndFreezeDamage()
+  await testEntityExplosionPrime()
   await testExplosionDamage()
   console.log(`PASS Mineflayer suite on Paper ${TEST_VERSION} build ${PAPER_BUILD}`)
 }

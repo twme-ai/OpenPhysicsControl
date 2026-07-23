@@ -6,7 +6,9 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class PhysicsClassifierTest {
     @Test
@@ -67,7 +69,29 @@ final class PhysicsClassifierTest {
         assertNull(PhysicsClassifier.physicalInteraction(Material.STONE));
         assertEquals(Rule.FALL_DAMAGE, PhysicsClassifier.damage(EntityDamageEvent.DamageCause.FALL));
         assertEquals(Rule.DROWNING_DAMAGE, PhysicsClassifier.damage(EntityDamageEvent.DamageCause.DROWNING));
-        assertNull(PhysicsClassifier.damage(EntityDamageEvent.DamageCause.FIRE));
+        assertEquals(Rule.FIRE_DAMAGE, PhysicsClassifier.damage(EntityDamageEvent.DamageCause.FIRE));
+        assertEquals(Rule.FIRE_DAMAGE, PhysicsClassifier.damage(EntityDamageEvent.DamageCause.FIRE_TICK));
+        assertEquals(Rule.FIRE_DAMAGE, PhysicsClassifier.damage(EntityDamageEvent.DamageCause.MELTING));
+        assertEquals(Rule.FIRE_DAMAGE, PhysicsClassifier.damage(EntityDamageEvent.DamageCause.LAVA));
+        assertEquals(Rule.FIRE_DAMAGE, PhysicsClassifier.damage(EntityDamageEvent.DamageCause.HOT_FLOOR));
+        assertEquals(Rule.FIRE_DAMAGE, PhysicsClassifier.damage(EntityDamageEvent.DamageCause.CAMPFIRE));
+        assertEquals(Rule.FREEZE_DAMAGE, PhysicsClassifier.damage(EntityDamageEvent.DamageCause.FREEZE));
+        assertNull(PhysicsClassifier.damage(EntityDamageEvent.DamageCause.CONTACT));
+        assertEquals(Rule.FIRE_DAMAGE, PhysicsClassifier.thermalContact(Material.MAGMA_BLOCK));
+        assertEquals(Rule.FIRE_DAMAGE, PhysicsClassifier.thermalContact(Material.CAMPFIRE));
+        assertNull(PhysicsClassifier.thermalContact(Material.CACTUS));
+
+        assertEquals(Rule.NATURAL_MOB_SPAWNING,
+            PhysicsClassifier.spawn(org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.NATURAL));
+        assertEquals(Rule.SPAWNER_MOB_SPAWNING,
+            PhysicsClassifier.spawn(org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.SPAWNER));
+        assertEquals(Rule.SPAWNER_MOB_SPAWNING,
+            PhysicsClassifier.spawn(org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.TRIAL_SPAWNER));
+        assertNull(PhysicsClassifier.spawn(org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.BREEDING));
+
+        assertTrue(PhysicsClassifier.oxygenDepletes(300, 299));
+        assertFalse(PhysicsClassifier.oxygenDepletes(299, 300));
+        assertFalse(PhysicsClassifier.oxygenDepletes(300, 300));
     }
 
     @Test

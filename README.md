@@ -11,7 +11,7 @@ OpenPhysicsControl 是從零撰寫、採 MIT 授權的 Bukkit 世界物理控制
 
 ## 功能
 
-74 項規則可按世界獨立控制，涵蓋方塊與流體、火焰與氣候、植物生長、實體物理、紅石以及自動化方塊。預設值位於 `plugins/OpenPhysicsControl/default-rules.yml`，各世界狀態儲存在 `plugins/OpenPhysicsControl/worlds/<世界名稱>.yml`。完整事件來源及測試狀態見 [`docs/physics-matrix.md`](docs/physics-matrix.md)。
+80 項規則可按世界獨立控制，涵蓋方塊與流體、火焰與氣候、植物生長、實體物理、紅石以及自動化方塊。新增的實體控制可停止標準與試煉生怪器、實體爆炸引爆、氧氣消耗、火焰/高溫傷害、凍傷及載具與實體碰撞。預設值位於 `plugins/OpenPhysicsControl/default-rules.yml`，各世界狀態儲存在 `plugins/OpenPhysicsControl/worlds/<世界名稱>.yml`。完整事件來源及測試狀態見 [`docs/physics-matrix.md`](docs/physics-matrix.md)。
 
 `/opc` 開啟三列固定位置的物理分類選單，選擇分類後才會顯示該組規則；分類布局延續舊版熟悉的互動、建造、重力與流體、世界、生長區域，並加入機械分類。亦可使用 `/openphysics`、`/ophysics` 或 `/pc`。其他指令：
 
@@ -22,6 +22,8 @@ OpenPhysicsControl 是從零撰寫、採 MIT 授權的 Bukkit 世界物理控制
 ```
 
 指令狀態以規則行為為準：大多數規則的 `on` 代表物理正常運作、`off` 代表停止；`block-hit-projectile-removal` 則是相容舊版的可選清理，`on` 時會移除命中方塊的箭矢與三叉戟，預設 `off` 以保留原版箭矢留存。
+
+`oxygen-depletion` 的 `off` 只會阻止水中氧氣減少，離水後仍會恢復氧氣；`drowning-damage` 是獨立規則。`fire-damage` 不會攔截仙人掌、甜莓叢或尖滴水石等一般接觸傷害，這些不屬於火焰與高溫控制範圍。
 
 `default-rules.yml` 會在首次啟動時產生，並列出全部規則；除上述清理選項外，`true` 代表物理運作，`false` 代表停止。世界檔已有的值優先，只有新世界或世界檔缺少的規則才採用預設值。從舊版升級時，插件會在同名世界檔尚不存在的前提下，自動將 `<world-uuid>.yml` 搬移為 `<世界名稱>.yml`，不會覆寫既有名稱檔。世界名稱中的路徑或系統保留字元會以百分比編碼。
 

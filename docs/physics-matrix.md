@@ -28,6 +28,7 @@ Evidence codes:
 | `sculk-vibrations` | `BlockReceiveGameEvent` | Sculk sensor and shrieker game-event reception | API |
 | `tnt-prime` | `TNTPrimeEvent` | TNT priming by redstone, fire, projectiles, and explosions | MF |
 | `explosion-block-damage` | `EntityExplodeEvent`, `BlockExplodeEvent` | Clears affected block lists while preserving entity damage and sound | MF |
+| `entity-explosion-prime` | `ExplosionPrimeEvent` | Entity-origin explosion priming, including TNT entities, creepers, end crystals, wind charges, and firework explosions; beds and respawn anchors remain block-origin explosions | MF |
 
 ## Fire, climate, and time
 
@@ -82,6 +83,7 @@ Evidence codes:
 | `end-portal-frame-filling` | `PlayerInteractEvent`, `EntityChangeBlockEvent` | Placing an Eye of Ender into an End portal frame | MF |
 | `glow-berry-picking` | `PlayerInteractEvent`, `EntityChangeBlockEvent` | Harvesting ripe glow berries from cave vines | MF |
 | `natural-mob-spawning` | `CreatureSpawnEvent` with `NATURAL` reason | Natural mob spawning only; commands, spawners, breeding, buckets, and plugins remain allowed | API |
+| `spawner-mob-spawning` | `SpawnerSpawnEvent`, `TrialSpawnerSpawnEvent`, `CreatureSpawnEvent` with `SPAWNER`/`TRIAL_SPAWNER` reasons | Standard and trial spawner output; natural, command, breeding, bucket, and plugin spawns remain allowed | MF, UT, API |
 | `mob-breeding` | `EntityEnterLoveModeEvent`, `EntityBreedEvent` | Entry into love mode and animal breeding completion | API |
 | `mob-transform` | `EntityTransformEvent`, runtime-selected `CubeMobSplitEvent`/`SlimeSplitEvent` and `EntityZapEvent`/`PigZapEvent`, `CreeperPowerEvent`, `SheepRegrowWoolEvent` | Replacement transformations, cube-mob splitting, lightning state changes, and wool regrowth | API |
 | `beehive-entry` | `EntityEnterBlockEvent` | Bees entering nests and hives | API |
@@ -93,6 +95,10 @@ Evidence codes:
 | `fall-damage` | `EntityDamageEvent` | Fall, elytra wall collision, and falling-block damage | UT |
 | `knockback` | Paper or Bukkit knockback event selected at runtime | Entity knockback; uses Paper's current event without linking it on Spigot | API |
 | `drowning-damage` | `EntityDamageEvent` | Drowning damage without changing air mechanics | UT |
+| `oxygen-depletion` | `EntityAirChangeEvent` | Reductions in living entities' remaining air only; air recovery after leaving water remains enabled | MF, UT |
+| `fire-damage` | `EntityDamageEvent`, `EntityDamageByBlockEvent` | Fire, burning, lava, snow-golem melting, magma blocks, campfires, and soul campfires; unrelated contact damage remains enabled | MF, UT |
+| `freeze-damage` | `EntityDamageEvent` with `FREEZE` cause | Powder-snow freezing damage | MF, UT |
+| `vehicle-entity-collision` | `VehicleEntityCollisionEvent` | Server-side boat and minecart collisions with entities, including collision push/mount behavior; vehicle-block collision is unaffected | API |
 | `hunger` | `EntityExhaustionEvent`, `FoodLevelChangeEvent` | Player exhaustion accumulation and food-level changes | API |
 | `natural-regen` | `EntityRegainHealthEvent` | Saturation and natural regeneration; potions and custom healing remain allowed | API |
 
@@ -124,7 +130,7 @@ The following surfaces were inspected but are not presented as world-physics rul
 | Direct player protection | `BlockBreakEvent`, `BlockPlaceEvent`, inventory clicks, bucket use | Belongs to a protection plugin; blocking it would change ownership/security semantics rather than simulation. |
 | Client movement solver | acceleration, friction, jumping, sprinting, climbing, swimming, elytra, collision boxes | Mostly predicted by the client and has no complete portable Spigot event surface. Mineflayer's `prismarine-physics` models it for bots but cannot turn it into a server rule. |
 | Mob AI movement | pathfinding, goals, navigation, looking, jumping | Paper exposes some move callbacks, but Spigot does not and per-tick cancellation would be unsuitable for Folia. |
-| Generic combat/effects | attacks, potions, poison, magic, armor, death, resurrection | Gameplay/combat scope. Only environmental fall/drowning and knockback controls are included. |
+| Generic combat/effects | attacks, potions, poison, magic, armor, death, resurrection | Gameplay/combat scope. Only environmental fall, drowning, fire/heat, freezing, and knockback controls are included. |
 | Explicit travel and posture | player teleport, portal entry, mounting, swimming/gliding toggles | Direct entity/player action rather than autonomous world simulation; portal *creation* remains covered. |
 | Chunk generation and data packs | terrain noise, carvers, structures generated with chunks | Occurs during generation rather than runtime physics and cannot be reversed safely by an event cancellation plugin. |
 | Paper-only mechanics | `EntityMoveEvent`, `EntityInsideBlockEvent`, compost and dragon-egg Paper events | Excluded from the shared core where no equivalent Spigot 26.2 event exists. Portable Bukkit fallbacks are used when available. |

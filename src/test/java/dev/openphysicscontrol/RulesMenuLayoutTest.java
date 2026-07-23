@@ -11,6 +11,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 final class RulesMenuLayoutTest {
     @Test
     void centersEveryCurrentRuleGroup() {
+        assertEquals(List.of(1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 14, 15, 16),
+            RulesMenu.centeredSlots(13, 0));
         assertEquals(List.of(1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 16),
             RulesMenu.centeredSlots(14, 0));
         assertEquals(List.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17),
@@ -18,6 +20,7 @@ final class RulesMenuLayoutTest {
         assertEquals(IntStream.range(0, 18).boxed().toList(), RulesMenu.centeredSlots(18, 0));
         assertEquals(List.of(0, 1, 2, 3, 5, 6, 7, 8), RulesMenu.centeredSlots(8, 0));
         assertEquals(List.of(1, 2, 3, 4, 5, 6, 7), RulesMenu.centeredSlots(7, 0));
+        assertEquals(List.of(2, 3, 4, 5, 6, 11, 12, 13, 14, 15), RulesMenu.centeredSlots(10, 0));
         assertEquals(IntStream.range(0, 9).boxed().toList(), RulesMenu.centeredSlots(9, 0));
     }
 
@@ -29,6 +32,8 @@ final class RulesMenuLayoutTest {
     @Test
     void reservesACenteredFooterRow() {
         assertEquals(18, RulesMenu.menuSizeFor(8));
+        assertEquals(27, RulesMenu.menuSizeFor(10));
+        assertEquals(27, RulesMenu.menuSizeFor(13));
         assertEquals(27, RulesMenu.menuSizeFor(14));
         assertEquals(27, RulesMenu.menuSizeFor(17));
         assertEquals(27, RulesMenu.menuSizeFor(18));

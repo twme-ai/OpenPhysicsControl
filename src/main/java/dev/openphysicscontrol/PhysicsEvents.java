@@ -9,6 +9,7 @@ import org.bukkit.block.data.type.EndPortalFrame;
 import org.bukkit.block.data.type.MangrovePropagule;
 import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.FallingBlock;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -43,6 +44,7 @@ import org.bukkit.event.block.SpongeAbsorbEvent;
 import org.bukkit.event.block.TNTPrimeEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.CreeperPowerEvent;
+import org.bukkit.event.entity.EntityAirChangeEvent;
 import org.bukkit.event.entity.EntityBreedEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityCombustEvent;
@@ -54,12 +56,15 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntityInteractEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.entity.EntityTransformEvent;
+import org.bukkit.event.entity.ExplosionPrimeEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.entity.ItemDespawnEvent;
 import org.bukkit.event.entity.ItemMergeEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.entity.SheepRegrowWoolEvent;
+import org.bukkit.event.entity.SpawnerSpawnEvent;
+import org.bukkit.event.entity.TrialSpawnerSpawnEvent;
 import org.bukkit.event.inventory.BrewEvent;
 import org.bukkit.event.inventory.BrewingStandFuelEvent;
 import org.bukkit.event.inventory.FurnaceBurnEvent;
@@ -73,6 +78,7 @@ import org.bukkit.event.weather.WeatherChangeEvent;
 import org.bukkit.event.world.PortalCreateEvent;
 import org.bukkit.event.world.StructureGrowEvent;
 import org.bukkit.event.world.TimeSkipEvent;
+import org.bukkit.event.vehicle.VehicleEntityCollisionEvent;
 import org.bukkit.inventory.Inventory;
 
 public final class PhysicsEvents implements Listener {
@@ -238,6 +244,11 @@ public final class PhysicsEvents implements Listener {
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+    public void entityExplosionPrime(ExplosionPrimeEvent event) {
+        control(event, event.getEntity().getWorld(), Rule.ENTITY_EXPLOSION_PRIME);
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void playerInteract(PlayerInteractEvent event) {
         Block clicked = event.getClickedBlock();
         if (clicked == null) return;
@@ -314,10 +325,18 @@ public final class PhysicsEvents implements Listener {
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-    public void naturalSpawn(CreatureSpawnEvent event) {
-        if (event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.NATURAL) {
-            control(event, event.getLocation().getWorld(), Rule.NATURAL_MOB_SPAWNING);
-        }
+    public void mobSpawn(CreatureSpawnEvent event) {
+        control(event, event.getLocation().getWorld(), PhysicsClassifier.spawn(event.getSpawnReason()));
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+    public void spawnerSpawn(SpawnerSpawnEvent event) {
+        control(event, event.getEntity().getWorld(), Rule.SPAWNER_MOB_SPAWNING);
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+    public void trialSpawnerSpawn(TrialSpawnerSpawnEvent event) {
+        control(event, event.getEntity().getWorld(), Rule.SPAWNER_MOB_SPAWNING);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
@@ -377,13 +396,26 @@ public final class PhysicsEvents implements Listener {
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+    public void vehicleEntityCollision(VehicleEntityCollisionEvent event) {
+        control(event, event.getVehicle().getWorld(), Rule.VEHICLE_ENTITY_COLLISION);
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void combust(EntityCombustEvent event) {
         control(event, event.getEntity().getWorld(), Rule.ENTITY_COMBUST);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+    public void oxygenDepletion(EntityAirChangeEvent event) {
+        if (event.getEntity() instanceof LivingEntity entity
+            && PhysicsClassifier.oxygenDepletes(entity.getRemainingAir(), event.getAmount())) {
+            control(event, entity.getWorld(), Rule.OXYGEN_DEPLETION);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void damage(EntityDamageEvent event) {
-        control(event, event.getEntity().getWorld(), PhysicsClassifier.damage(event.getCause()));
+        control(event, event.getEntity().getWorld(), PhysicsClassifier.damage(event));
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
