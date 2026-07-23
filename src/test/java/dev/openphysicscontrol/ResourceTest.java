@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class ResourceTest {
     private static final String[] LOCALES = {"en", "zh_tw"};
@@ -63,7 +64,10 @@ final class ResourceTest {
         Map<String, Object> defaults = yaml("default-rules.yml");
         Set<String> expected = Arrays.stream(Rule.values()).map(Rule::key).collect(Collectors.toSet());
         assertEquals(expected, defaults.keySet());
-        assertEquals(Set.of(Boolean.TRUE), Set.copyOf(defaults.values()));
+        assertFalse((Boolean) defaults.get("block-hit-projectile-removal"));
+        assertTrue(defaults.entrySet().stream()
+            .filter(entry -> !entry.getKey().equals("block-hit-projectile-removal"))
+            .allMatch(entry -> Boolean.TRUE.equals(entry.getValue())));
     }
 
     @Test

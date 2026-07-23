@@ -28,7 +28,7 @@ public final class RuleStore {
 
     private final JavaPlugin plugin;
     private final Map<UUID, Map<Rule, Boolean>> states = new ConcurrentHashMap<>();
-    private volatile Map<Rule, Boolean> defaults = allEnabled();
+    private volatile Map<Rule, Boolean> defaults = allDefaults();
 
     public RuleStore(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -52,7 +52,7 @@ public final class RuleStore {
                 ? yaml.getBoolean(path)
                 : legacyPath != null && yaml.isBoolean(legacyPath)
                     ? yaml.getBoolean(legacyPath)
-                    : this.defaults.getOrDefault(rule, true);
+                    : this.defaults.getOrDefault(rule, rule.defaultEnabled());
             values.put(rule, value);
             if (!yaml.isBoolean(path)) {
                 yaml.set(path, value);
@@ -73,7 +73,7 @@ public final class RuleStore {
             load(world);
             worldRules = this.states.get(world.getUID());
         }
-        return worldRules.getOrDefault(rule, this.defaults.getOrDefault(rule, true));
+        return worldRules.getOrDefault(rule, this.defaults.getOrDefault(rule, rule.defaultEnabled()));
     }
 
     public synchronized boolean set(World world, Rule rule, Boolean requested) {
@@ -83,7 +83,7 @@ public final class RuleStore {
             current = this.states.get(world.getUID());
         }
         boolean value = requested == null
-            ? !current.getOrDefault(rule, this.defaults.getOrDefault(rule, true))
+            ? !current.getOrDefault(rule, this.defaults.getOrDefault(rule, rule.defaultEnabled()))
             : requested;
         EnumMap<Rule, Boolean> updated = new EnumMap<>(current);
         updated.put(rule, value);
@@ -103,7 +103,7 @@ public final class RuleStore {
         EnumMap<Rule, Boolean> values = new EnumMap<>(Rule.class);
         boolean changed = false;
         for (Rule rule : Rule.values()) {
-            boolean value = yaml.isBoolean(rule.key()) ? yaml.getBoolean(rule.key()) : true;
+            boolean value = yaml.isBoolean(rule.key()) ? yaml.getBoolean(rule.key()) : rule.defaultEnabled();
             values.put(rule, value);
             if (!yaml.isBoolean(rule.key())) {
                 yaml.set(rule.key(), value);
@@ -229,9 +229,9 @@ public final class RuleStore {
         }
     }
 
-    private static Map<Rule, Boolean> allEnabled() {
+    private static Map<Rule, Boolean> allDefaults() {
         EnumMap<Rule, Boolean> values = new EnumMap<>(Rule.class);
-        for (Rule rule : Rule.values()) values.put(rule, true);
+        for (Rule rule : Rule.values()) values.put(rule, rule.defaultEnabled());
         return Collections.unmodifiableMap(values);
     }
 }

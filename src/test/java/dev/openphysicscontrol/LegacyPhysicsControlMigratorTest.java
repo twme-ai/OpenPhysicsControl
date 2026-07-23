@@ -32,6 +32,7 @@ final class LegacyPhysicsControlMigratorTest {
             BONE_MEAL_USAGE: false
             GLOW_BERRIES_PICKING: false
             END_PORTAL_FRAMES_FILLING: false
+            BLOCK_HIT_PROJECTILES_REMOVING: true
             """;
         Files.writeString(source, sourceContent);
 
@@ -41,13 +42,16 @@ final class LegacyPhysicsControlMigratorTest {
         YamlConfiguration migrated = YamlConfiguration.loadConfiguration(destination.toFile());
         assertTrue(result.sourceFound());
         assertEquals(source.toFile(), result.source());
-        assertEquals(5, result.importedRules());
-        assertEquals(Set.of("GLOW_BERRIES_PICKING", "END_PORTAL_FRAMES_FILLING"), result.unsupportedTriggers());
+        assertEquals(8, result.importedRules());
+        assertTrue(result.unsupportedTriggers().isEmpty());
         assertFalse(migrated.getBoolean("gravity"));
         assertFalse(migrated.getBoolean("water-flow"));
         assertFalse(migrated.getBoolean("mob-griefing"));
         assertFalse(migrated.getBoolean("frogspawn-hatch"));
         assertFalse(migrated.getBoolean("bone-meal"));
+        assertFalse(migrated.getBoolean("glow-berry-picking"));
+        assertFalse(migrated.getBoolean("end-portal-frame-filling"));
+        assertTrue(migrated.getBoolean("block-hit-projectile-removal"));
         assertEquals(sourceContent, Files.readString(source));
     }
 
@@ -89,6 +93,7 @@ final class LegacyPhysicsControlMigratorTest {
             "SNOW_GOLEMS_CREATE_SNOW", "WITHER_CREATE_WITHER_ROSE_BLOCKS",
             "FROGSPAWN_LAYING_AND_SPAWNING", "PLAYERS_FLINT_USAGE", "BONE_MEAL_USAGE",
             "PLAYERS_BONE_MEAL_USAGE", "BURNING_ARROWS_ACTIVATE_TNT", "FARMLANDS_TRAMPLING",
+            "END_PORTAL_FRAMES_FILLING", "GLOW_BERRIES_PICKING", "BLOCK_HIT_PROJECTILES_REMOVING",
             "DRAGON_EGGS_TELEPORTING", "FROSTED_ICE_PHYSICS", "TURTLE_EGGS_TRAMPLING",
             "DRIPLEAFS_LOWERING", "LADDERS_DESTROYING", "SIGNS_DESTROYING", "RAILS_DESTROYING",
             "TORCHES_DESTROYING", "REDSTONE_TORCHES_DESTROYING", "SOUL_TORCHES_DESTROYING",
@@ -112,6 +117,7 @@ final class LegacyPhysicsControlMigratorTest {
 
         Set<Rule> expected = Set.of(
             Rule.MOB_GRIEFING, Rule.MOB_BLOCK_FORM, Rule.FROGSPAWN_HATCH, Rule.FIRE_IGNITE, Rule.BONE_MEAL,
+            Rule.END_PORTAL_FRAME_FILLING, Rule.GLOW_BERRY_PICKING, Rule.BLOCK_HIT_PROJECTILE_REMOVAL,
             Rule.TNT_PRIME, Rule.FARMLAND_TRAMPLE, Rule.DRAGON_EGG_TELEPORT, Rule.FROSTED_ICE,
             Rule.TURTLE_EGG_TRAMPLE, Rule.DRIPLEAF_TILT, Rule.BLOCK_UPDATES, Rule.GRAVITY, Rule.WATER_FLOW,
             Rule.LAVA_FLOW, Rule.FIRE_SPREAD, Rule.SNOW_MELT, Rule.FARMLAND_DRY, Rule.ICE_MELT,

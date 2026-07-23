@@ -58,6 +58,8 @@ public enum Rule {
     FARMLAND_TRAMPLE(Group.PLAYERS, Material.LEATHER_BOOTS),
     TURTLE_EGG_TRAMPLE(Group.PLAYERS, Material.TURTLE_HELMET),
     DRIPLEAF_TILT(Group.PLAYERS, Material.BIG_DRIPLEAF),
+    END_PORTAL_FRAME_FILLING(Group.PLAYERS, Material.END_PORTAL_FRAME),
+    GLOW_BERRY_PICKING(Group.PLAYERS, Material.GLOW_BERRIES),
     NATURAL_MOB_SPAWNING(Group.MOBS, Material.ZOMBIE_SPAWN_EGG),
     MOB_BREEDING(Group.MOBS, Material.WHEAT),
     MOB_TRANSFORM(Group.MOBS, Material.ROTTEN_FLESH),
@@ -65,6 +67,7 @@ public enum Rule {
     ITEM_DESPAWN(Group.ENTITIES, Material.CLOCK),
     ITEM_MERGE(Group.ENTITIES, Material.HOPPER),
     PROJECTILE_LAUNCH(Group.ENTITIES, Material.ARROW),
+    BLOCK_HIT_PROJECTILE_REMOVAL(Group.ENTITIES, Material.ARROW, false),
     ENTITY_COMBUST(Group.ENTITIES, Material.BLAZE_POWDER),
     FALL_DAMAGE(Group.ENTITIES, Material.FEATHER),
     KNOCKBACK(Group.ENTITIES, Material.SHIELD),
@@ -83,10 +86,16 @@ public enum Rule {
 
     private final Group group;
     private final Material icon;
+    private final boolean defaultEnabled;
 
     Rule(Group group, Material icon) {
+        this(group, icon, true);
+    }
+
+    Rule(Group group, Material icon, boolean defaultEnabled) {
         this.group = group;
         this.icon = icon;
+        this.defaultEnabled = defaultEnabled;
     }
 
     public Group group() {
@@ -95,6 +104,10 @@ public enum Rule {
 
     public Material icon() {
         return this.icon;
+    }
+
+    public boolean defaultEnabled() {
+        return this.defaultEnabled;
     }
 
     public String key() {

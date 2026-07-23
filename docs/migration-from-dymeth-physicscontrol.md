@@ -22,6 +22,9 @@ The old plugin exposed material- and actor-specific switches while OpenPhysicsCo
 | `frogspawn-hatch` | Frogspawn laying and spawning |
 | `fire-ignite` | Player flint usage |
 | `bone-meal` | `PLAYERS_BONE_MEAL_USAGE` and the older `BONE_MEAL_USAGE` name |
+| `end-portal-frame-filling` | `END_PORTAL_FRAMES_FILLING` |
+| `glow-berry-picking` | `GLOW_BERRIES_PICKING` |
+| `block-hit-projectile-removal` | `BLOCK_HIT_PROJECTILES_REMOVING`; applies to arrows and tridents and remains `false` by default, as in the old plugin |
 | `tnt-prime` | Burning arrows activating TNT |
 | `farmland-trample`, `turtle-egg-trample`, `dripleaf-tilt`, `dragon-egg-teleport`, `frosted-ice` | Corresponding legacy physical-interaction triggers |
 | `block-updates` | Ladders, signs, rails, torches, redstone torches, soul torches, and saplings losing support |
@@ -31,4 +34,4 @@ The old plugin exposed material- and actor-specific switches while OpenPhysicsCo
 | `plant-spread`, `mushroom-growth`, `stem-growth`, `crop-growth`, `amethyst-growth` | Grass/mycelium, mushrooms, melons/pumpkins, crop, and amethyst triggers |
 | `vertical-plant-growth`, `tree-growth`, `vine-growth`, `dripstone-growth` | Cane/cactus/chorus/kelp/bamboo, trees, vine variants/glow berries, and pointed dripstone triggers |
 
-The following legacy values are intentionally reported rather than silently mapped because OpenPhysicsControl has no behaviorally equivalent rule: `END_PORTAL_FRAMES_FILLING`, `GLOW_BERRIES_PICKING`, and `BLOCK_HIT_PROJECTILES_REMOVING`. Legacy internal settings `DEBUG_MESSAGES`, `ALLOW_UNRECOGNIZED_ACTIONS`, and `IGNORED_STATE` are also not imported.
+Legacy internal settings `DEBUG_MESSAGES`, `ALLOW_UNRECOGNIZED_ACTIONS`, and `IGNORED_STATE` are intentionally reported rather than imported.

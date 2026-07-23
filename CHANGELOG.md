@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.5.0 - 2026-07-23
+
+- Added independent controls for End portal frame filling and glow berry picking.
+- Restored the legacy optional removal of arrows and tridents that hit blocks, preserving its disabled-by-default behavior.
+- Migrated all three corresponding Dymeth PhysicsControl triggers and covered them through Mineflayer behavior tests.
+
 ## 2.4.0 - 2026-07-23
 
 - Added automatic per-world migration from Dymeth PhysicsControl, including its pre-1.1 data layout and historical bone-meal trigger name.

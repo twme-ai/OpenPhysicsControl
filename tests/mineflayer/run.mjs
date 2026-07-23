@@ -99,7 +99,8 @@ async function resetArea () {
   await commands(
     'execute in minecraft:overworld run fill -8 100 -8 30 116 8 air',
     'execute in minecraft:overworld run fill -8 99 -8 30 99 8 stone',
-    'execute in minecraft:overworld run kill @e[type=minecraft:tnt]'
+    'execute in minecraft:overworld run kill @e[type=minecraft:tnt]',
+    'execute in minecraft:overworld run kill @e[type=minecraft:arrow]'
   )
   await delay(500)
 }
@@ -155,6 +156,10 @@ async function testRuleStorage (serverDir) {
     if (file === 'world.yml') {
       assert.match(rules, /^gravity: false$/m, 'legacy gravity setting was not imported')
       assert.match(rules, /^bone-meal: false$/m, 'legacy bone meal alias was not imported')
+      assert.match(rules, /^end-portal-frame-filling: false$/m, 'legacy End portal frame setting was not imported')
+      assert.match(rules, /^glow-berry-picking: false$/m, 'legacy glow berry setting was not imported')
+      assert.match(rules, /^block-hit-projectile-removal: true$/m,
+        'legacy block-hit projectile cleanup setting was not imported')
     } else if (file === 'world_nether.yml') {
       assert.match(rules, /^crop-growth: false$/m, 'pre-1.1 legacy world section was not imported')
       assert.match(rules, /^gravity: true$/m, `${file} did not inherit a missing true default`)
@@ -163,7 +168,8 @@ async function testRuleStorage (serverDir) {
     }
   }
   const legacySource = await readFile(join(serverDir, 'plugins/PhysicsControl/triggers/world.yml'), 'utf8')
-  assert.equal(legacySource, 'GRAVEL_FALLING: false\nBONE_MEAL_USAGE: false\n')
+  assert.equal(legacySource,
+    'GRAVEL_FALLING: false\nBONE_MEAL_USAGE: false\nEND_PORTAL_FRAMES_FILLING: false\nGLOW_BERRIES_PICKING: false\nBLOCK_HIT_PROJECTILES_REMOVING: true\n')
   const legacyConfig = await readFile(join(serverDir, 'plugins/PhysicsControl/config.yml'), 'utf8')
   assert.equal(legacyConfig, 'world_nether:\n  WHEAT_GROWING: false\n')
   console.log('PASS default rules, legacy migration, and world-name storage')
@@ -196,13 +202,13 @@ async function testLocalizedMenu () {
       slot: 4,
       title: /玩家互動/,
       size: 18,
-      rules: [2, 3, 4, 5, 6]
+      rules: [1, 2, 3, 4, 5, 6, 7]
     },
     {
       slot: 5,
       title: /實體效果/,
       size: 18,
-      rules: [0, 1, 2, 3, 5, 6, 7, 8]
+      rules: Array.from({ length: 9 }, (_, slot) => slot)
     },
     {
       slot: 11,
@@ -499,6 +505,96 @@ async function testHangingMangroveMaturation () {
   console.log('PASS hanging mangrove propagule maturation')
 }
 
+async function equipEnderEye () {
+  await commands('clear PhysicsBot minecraft:ender_eye', 'give PhysicsBot minecraft:ender_eye 1')
+  await delay(350)
+  const eye = bot.inventory.items().find(item => item.name === 'ender_eye')
+  assert.ok(eye, 'Mineflayer did not receive an Eye of Ender')
+  await bot.equip(eye, 'hand')
+  await delay(100)
+}
+
+async function testEndPortalFrameFilling () {
+  const position = [2, 101, 0]
+  await commands(
+    'opc set end-portal-frame-filling off world',
+    'setblock 2 101 0 minecraft:end_portal_frame[facing=north,eye=false]'
+  )
+  await equipEnderEye()
+  await bot.activateBlock(await block(...position))
+  await delay(500)
+  assert.equal(String((await block(...position)).getProperties().eye), 'false',
+    'end portal frame filling off: Eye of Ender was inserted')
+
+  await commands(
+    'opc set end-portal-frame-filling on world',
+    'setblock 2 101 0 minecraft:end_portal_frame[facing=north,eye=false]'
+  )
+  await equipEnderEye()
+  await bot.activateBlock(await block(...position))
+  await delay(500)
+  assert.equal(String((await block(...position)).getProperties().eye), 'true',
+    'end portal frame filling on: Eye of Ender was not inserted')
+  await commands('clear PhysicsBot minecraft:ender_eye', 'setblock 2 101 0 air')
+  console.log('PASS end-portal-frame-filling')
+}
+
+async function testGlowBerryPicking () {
+  const position = [2, 102, 0]
+  async function ripeVine () {
+    await commands(
+      'setblock 2 103 0 minecraft:stone',
+      'setblock 2 102 0 minecraft:cave_vines[age=25,berries=true]'
+    )
+    await delay(250)
+  }
+
+  await commands('clear PhysicsBot', 'opc set glow-berry-picking off world')
+  await bot.unequip('hand')
+  await ripeVine()
+  await bot.activateBlock(await block(...position))
+  await delay(500)
+  assert.equal(String((await block(...position)).getProperties().berries), 'true',
+    'glow berry picking off: ripe cave vines were harvested')
+
+  await commands('opc set glow-berry-picking on world')
+  await ripeVine()
+  await bot.activateBlock(await block(...position))
+  await delay(500)
+  assert.equal(String((await block(...position)).getProperties().berries), 'false',
+    'glow berry picking on: ripe cave vines were not harvested')
+  await commands('clear PhysicsBot', 'setblock 2 102 0 air', 'setblock 2 103 0 air')
+  console.log('PASS glow-berry-picking')
+}
+
+function nearbyArrows () {
+  return Object.values(bot.entities).filter(entity => entity.name === 'arrow'
+    && entity.position.distanceTo(bot.entity.position) < 16)
+}
+
+async function launchArrowAtBlock () {
+  await commands(
+    'kill @e[type=minecraft:arrow]',
+    'fill 7 101 -1 7 103 1 minecraft:stone',
+    'summon minecraft:arrow 3 102 0 {Motion:[2.0d,0.0d,0.0d],NoGravity:1b,Tags:["opc-projectile-test"]}'
+  )
+  await delay(800)
+}
+
+async function testBlockHitProjectileRemoval () {
+  await commands('opc set block-hit-projectile-removal off world')
+  await launchArrowAtBlock()
+  assert.ok(nearbyArrows().length > 0,
+    'block-hit projectile removal off: arrow did not remain after hitting the block')
+
+  await commands('opc set block-hit-projectile-removal on world')
+  await launchArrowAtBlock()
+  assert.equal(nearbyArrows().length, 0,
+    'block-hit projectile removal on: arrow remained after hitting the block')
+  await commands('kill @e[type=minecraft:arrow]', 'fill 7 101 -1 7 103 1 air')
+  console.log('PASS block-hit-projectile-removal')
+}
+
 async function testExplosionDamage () {
   await commands(
     'opc set tnt-prime on world',
@@ -528,7 +624,7 @@ async function start () {
   await mkdir(join(serverDir, 'plugins/PhysicsControl/triggers'), { recursive: true })
   await writeFile(join(serverDir, 'plugins/OpenPhysicsControl/default-rules.yml'), 'note-blocks: false\n')
   await writeFile(join(serverDir, 'plugins/PhysicsControl/triggers/world.yml'),
-    'GRAVEL_FALLING: false\nBONE_MEAL_USAGE: false\n')
+    'GRAVEL_FALLING: false\nBONE_MEAL_USAGE: false\nEND_PORTAL_FRAMES_FILLING: false\nGLOW_BERRIES_PICKING: false\nBLOCK_HIT_PROJECTILES_REMOVING: true\n')
   await writeFile(join(serverDir, 'plugins/PhysicsControl/config.yml'), 'world_nether:\n  WHEAT_GROWING: false\n')
   await copyFile(pluginJar, join(serverDir, 'plugins/OpenPhysicsControl.jar'))
   await copyFile(paperCache, join(serverDir, 'paper.jar'))
@@ -598,6 +694,9 @@ async function start () {
   await testRedstone()
   await testPistons()
   await testHangingMangroveMaturation()
+  await testEndPortalFrameFilling()
+  await testGlowBerryPicking()
+  await testBlockHitProjectileRemoval()
   await testExplosionDamage()
   console.log(`PASS Mineflayer suite on Paper ${TEST_VERSION} build ${PAPER_BUILD}`)
 }

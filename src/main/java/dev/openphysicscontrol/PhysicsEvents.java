@@ -4,7 +4,10 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.data.type.CaveVinesPlant;
+import org.bukkit.block.data.type.EndPortalFrame;
 import org.bukkit.block.data.type.MangrovePropagule;
+import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.FallingBlock;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.EventHandler;
@@ -54,6 +57,7 @@ import org.bukkit.event.entity.EntityTransformEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.entity.ItemDespawnEvent;
 import org.bukkit.event.entity.ItemMergeEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.entity.SheepRegrowWoolEvent;
 import org.bukkit.event.inventory.BrewEvent;
@@ -185,6 +189,14 @@ public final class PhysicsEvents implements Listener {
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void change(EntityChangeBlockEvent event) {
+        if (isEndPortalFrameFilling(event)) {
+            control(event, event.getBlock().getWorld(), Rule.END_PORTAL_FRAME_FILLING);
+            return;
+        }
+        if (isGlowBerryHarvest(event)) {
+            control(event, event.getBlock().getWorld(), Rule.GLOW_BERRY_PICKING);
+            return;
+        }
         Rule rule;
         if (event.getEntity() instanceof FallingBlock) {
             rule = Rule.GRAVITY;
@@ -226,10 +238,14 @@ public final class PhysicsEvents implements Listener {
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-    public void trample(PlayerInteractEvent event) {
-        if (event.getAction() != Action.PHYSICAL || event.getClickedBlock() == null) return;
-        control(event, event.getClickedBlock().getWorld(),
-            PhysicsClassifier.physicalInteraction(event.getClickedBlock().getType()));
+    public void playerInteract(PlayerInteractEvent event) {
+        Block clicked = event.getClickedBlock();
+        if (clicked == null) return;
+        if (event.getAction() == Action.PHYSICAL) {
+            control(event, clicked.getWorld(), PhysicsClassifier.physicalInteraction(clicked.getType()));
+        } else if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+            control(event, clicked.getWorld(), rightClickRule(clicked.getType()));
+        }
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
@@ -353,6 +369,14 @@ public final class PhysicsEvents implements Listener {
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+    public void projectileHit(ProjectileHitEvent event) {
+        if (event.getHitBlock() == null || !(event.getEntity() instanceof AbstractArrow)) return;
+        if (this.rules.enabled(event.getEntity().getWorld(), Rule.BLOCK_HIT_PROJECTILE_REMOVAL)) {
+            event.getEntity().remove();
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void combust(EntityCombustEvent event) {
         control(event, event.getEntity().getWorld(), Rule.ENTITY_COMBUST);
     }
@@ -442,5 +466,27 @@ public final class PhysicsEvents implements Listener {
             if (location != null && location.getWorld() != null) return location.getWorld();
         }
         return null;
+    }
+
+    private static boolean isEndPortalFrameFilling(EntityChangeBlockEvent event) {
+        return event.getBlock().getBlockData() instanceof EndPortalFrame current
+            && event.getBlockData() instanceof EndPortalFrame next
+            && !current.hasEye()
+            && next.hasEye();
+    }
+
+    private static boolean isGlowBerryHarvest(EntityChangeBlockEvent event) {
+        return event.getBlock().getBlockData() instanceof CaveVinesPlant current
+            && event.getBlockData() instanceof CaveVinesPlant next
+            && current.isBerries()
+            && !next.isBerries();
+    }
+
+    private static Rule rightClickRule(Material material) {
+        return switch (material) {
+            case END_PORTAL_FRAME -> Rule.END_PORTAL_FRAME_FILLING;
+            case CAVE_VINES, CAVE_VINES_PLANT -> Rule.GLOW_BERRY_PICKING;
+            default -> null;
+        };
     }
 }

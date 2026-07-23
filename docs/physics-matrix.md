@@ -2,7 +2,7 @@
 
 This audit defines "physics" as autonomous world simulation, physical entity effects, and block-machine processing that can be controlled through Bukkit event surfaces. Most rows use portable Bukkit events; hanging mangrove propagules use a narrowly scoped post-change rollback gated by the verified server random-tick call origin. The inventory was derived from the Paper 26.2 and Spigot 26.2 API event classes under `block`, `world`, `weather`, relevant `entity`, and `inventory` packages.
 
-It intentionally excludes direct block break/place and inventory actions (protection-plugin scope), commands and custom plugin mutations, client-side collision prediction, chunk generation, and mob AI movement for which Spigot has no portable cancellable event. All rules are enabled by default.
+It intentionally excludes direct block break/place and inventory actions (protection-plugin scope), commands and custom plugin mutations, client-side collision prediction, chunk generation, and mob AI movement for which Spigot has no portable cancellable event. All simulation rules are enabled by default; the legacy-compatible block-hit arrow/trident cleanup is intentionally disabled by default.
 
 Evidence codes:
 
@@ -79,6 +79,8 @@ Evidence codes:
 | `farmland-trample` | `PlayerInteractEvent`, `EntityInteractEvent`, `EntityChangeBlockEvent` | Player and entity farmland trampling | UT |
 | `turtle-egg-trample` | Same physical interaction events | Turtle egg trampling | UT |
 | `dripleaf-tilt` | Same physical interaction events | Big dripleaf tilt caused by entities | UT |
+| `end-portal-frame-filling` | `PlayerInteractEvent`, `EntityChangeBlockEvent` | Placing an Eye of Ender into an End portal frame | MF |
+| `glow-berry-picking` | `PlayerInteractEvent`, `EntityChangeBlockEvent` | Harvesting ripe glow berries from cave vines | MF |
 | `natural-mob-spawning` | `CreatureSpawnEvent` with `NATURAL` reason | Natural mob spawning only; commands, spawners, breeding, buckets, and plugins remain allowed | API |
 | `mob-breeding` | `EntityEnterLoveModeEvent`, `EntityBreedEvent` | Entry into love mode and animal breeding completion | API |
 | `mob-transform` | `EntityTransformEvent`, runtime-selected `CubeMobSplitEvent`/`SlimeSplitEvent` and `EntityZapEvent`/`PigZapEvent`, `CreeperPowerEvent`, `SheepRegrowWoolEvent` | Replacement transformations, cube-mob splitting, lightning state changes, and wool regrowth | API |
@@ -86,6 +88,7 @@ Evidence codes:
 | `item-despawn` | `ItemDespawnEvent` | Dropped item expiry | API |
 | `item-merge` | `ItemMergeEvent` | Nearby dropped-item stack merging | API |
 | `projectile-launch` | `ProjectileLaunchEvent` | Arrows, tridents, potions, pearls, fireworks, and other projectile launches | API |
+| `block-hit-projectile-removal` | `ProjectileHitEvent` | Removes arrows and tridents after they hit a block when enabled; disabled by default to preserve vanilla persistence | MF |
 | `entity-combust` | `EntityCombustEvent` and subclasses | Entity ignition by sun, blocks, and entities | API |
 | `fall-damage` | `EntityDamageEvent` | Fall, elytra wall collision, and falling-block damage | UT |
 | `knockback` | Paper or Bukkit knockback event selected at runtime | Entity knockback; uses Paper's current event without linking it on Spigot | API |

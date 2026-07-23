@@ -59,6 +59,8 @@ mob-block-form: true
 farmland-trample: true
 turtle-egg-trample: true
 dripleaf-tilt: true
+end-portal-frame-filling: true
+glow-berry-picking: true
 natural-mob-spawning: true
 mob-breeding: true
 mob-transform: true
@@ -66,6 +68,8 @@ beehive-entry: true
 item-despawn: true
 item-merge: true
 projectile-launch: true
+# This optional cleanup matches the legacy plugin and leaves vanilla arrow persistence intact by default.
+block-hit-projectile-removal: false
 entity-combust: true
 fall-damage: true
 knockback: true

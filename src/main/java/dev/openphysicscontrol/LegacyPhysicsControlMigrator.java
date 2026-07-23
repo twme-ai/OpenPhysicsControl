@@ -90,6 +90,9 @@ final class LegacyPhysicsControlMigrator {
 
         put(result, Rule.FIRE_IGNITE, "PLAYERS_FLINT_USAGE");
         put(result, Rule.BONE_MEAL, "BONE_MEAL_USAGE", "PLAYERS_BONE_MEAL_USAGE");
+        put(result, Rule.END_PORTAL_FRAME_FILLING, "END_PORTAL_FRAMES_FILLING");
+        put(result, Rule.GLOW_BERRY_PICKING, "GLOW_BERRIES_PICKING");
+        put(result, Rule.BLOCK_HIT_PROJECTILE_REMOVAL, "BLOCK_HIT_PROJECTILES_REMOVING");
 
         put(result, Rule.TNT_PRIME, "BURNING_ARROWS_ACTIVATE_TNT");
         put(result, Rule.FARMLAND_TRAMPLE, "FARMLANDS_TRAMPLING");
