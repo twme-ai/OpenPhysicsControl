@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.2.0 - 2026-07-23
+
+- Added `default-rules.yml` with explicit defaults for every physics rule.
+- Changed per-world storage to readable world-name files with non-destructive UUID-file migration and safe filename encoding.
+- Documented the tested controls and Bukkit event limitation for planted, fertilized, and hanging mangrove propagules.
+- Added resource, filename-safety, and world-file migration tests.
+
 ## 2.1.0 - 2026-07-23
 
 - Replaced the flat paginated GUI with a centered category menu and centered rule submenus.

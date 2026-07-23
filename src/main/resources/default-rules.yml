@@ -1,0 +1,84 @@
+# Default physics state used when a world has no saved value for a rule.
+# true = physics runs; false = physics is stopped.
+# Existing values in worlds/<world-name>.yml take precedence.
+
+# Blocks and signals
+gravity: true
+block-updates: true
+water-flow: true
+lava-flow: true
+fluid-reactions: true
+concrete-harden: true
+pistons: true
+sponge-absorb: true
+dragon-egg-teleport: true
+portal-creation: true
+redstone: true
+sculk-vibrations: true
+tnt-prime: true
+explosion-block-damage: true
+
+# Fire, climate, and time
+fire-spread: true
+fire-burn: true
+fire-ignite: true
+fire-extinguish: true
+ice-melt: true
+snow-melt: true
+frosted-ice: true
+coral-fade: true
+ground-fade: true
+copper-weather: true
+natural-block-form: true
+farmland-dry: true
+cauldron-changes: true
+weather: true
+thunder: true
+lightning: true
+time-skip: true
+
+# Plants and growth
+leaf-decay: true
+crop-growth: true
+stem-growth: true
+vertical-plant-growth: true
+vine-growth: true
+mushroom-growth: true
+tree-growth: true
+plant-spread: true
+sculk-spread: true
+amethyst-growth: true
+dripstone-growth: true
+turtle-egg-hatch: true
+frogspawn-hatch: true
+bone-meal: true
+
+# Entities and players
+mob-griefing: true
+mob-block-form: true
+farmland-trample: true
+turtle-egg-trample: true
+dripleaf-tilt: true
+natural-mob-spawning: true
+mob-breeding: true
+mob-transform: true
+beehive-entry: true
+item-despawn: true
+item-merge: true
+projectile-launch: true
+entity-combust: true
+fall-damage: true
+knockback: true
+drowning-damage: true
+hunger: true
+natural-regen: true
+
+# Machines and processing
+dispensers: true
+hoppers: true
+furnaces: true
+brewing: true
+campfire-cooking: true
+crafter: true
+bell-ring: true
+note-blocks: true

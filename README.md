@@ -11,7 +11,7 @@ OpenPhysicsControl 是從零撰寫、採 MIT 授權的 Bukkit 世界物理控制
 
 ## 功能
 
-71 項規則可按世界獨立控制，涵蓋方塊與流體、火焰與氣候、植物生長、實體物理、紅石以及自動化方塊。所有規則預設開啟，狀態儲存在 `plugins/OpenPhysicsControl/worlds/<world-uuid>.yml`。完整事件來源及測試狀態見 [`docs/physics-matrix.md`](docs/physics-matrix.md)。
+71 項規則可按世界獨立控制，涵蓋方塊與流體、火焰與氣候、植物生長、實體物理、紅石以及自動化方塊。預設值位於 `plugins/OpenPhysicsControl/default-rules.yml`，各世界狀態儲存在 `plugins/OpenPhysicsControl/worlds/<世界名稱>.yml`。完整事件來源及測試狀態見 [`docs/physics-matrix.md`](docs/physics-matrix.md)。
 
 `/opc` 開啟置中的物理分類選單，選擇分類後才會顯示該組規則；亦可使用 `/openphysics`、`/ophysics` 或 `/pc`。其他指令：
 
@@ -22,6 +22,14 @@ OpenPhysicsControl 是從零撰寫、採 MIT 授權的 Bukkit 世界物理控制
 ```
 
 指令狀態以物理本身為準：`on` 代表物理正常運作，`off` 代表停止該項物理，`toggle` 則在兩者間切換。
+
+`default-rules.yml` 會在首次啟動時產生，並列出全部規則；`true` 代表物理運作，`false` 代表停止。世界檔已有的值優先，只有新世界或世界檔缺少的規則才採用預設值。從舊版升級時，插件會在同名世界檔尚不存在的前提下，自動將 `<world-uuid>.yml` 搬移為 `<世界名稱>.yml`，不會覆寫既有名稱檔。世界名稱中的路徑或系統保留字元會以百分比編碼。
+
+紅樹林胎生苗分成三種行為：
+
+- 種在地面後自然長成紅樹，由 `tree-growth`（GUI「樹木生長」）控制。
+- 使用骨粉催生時，`bone-meal` 可以直接停止；若骨粉已允許，長成樹仍同時受 `tree-growth` 控制。
+- 懸掛在紅樹林樹葉下方的胎生苗由 age 0 成熟至 age 4，目前沒有可有效取消的 Paper/Spigot 生長事件，因此 71 項規則中沒有能停止這段成熟過程的選項。
 
 玩家未指定語言時會依 Minecraft client locale 選擇英文或繁體中文，偏好持久化在 `player-languages.yml`。訊息檔位於 `lang/*.yml` 並使用 MiniMessage 格式。
 

@@ -49,6 +49,14 @@ final class ResourceTest {
     }
 
     @Test
+    void defaultRulesCoverEveryPhysicsRule() {
+        Map<String, Object> defaults = yaml("default-rules.yml");
+        Set<String> expected = Arrays.stream(Rule.values()).map(Rule::key).collect(Collectors.toSet());
+        assertEquals(expected, defaults.keySet());
+        assertEquals(Set.of(Boolean.TRUE), Set.copyOf(defaults.values()));
+    }
+
+    @Test
     void nestedRulePlaceholdersRemainPlainText() {
         MiniMessage miniMessage = MiniMessage.miniMessage();
         for (String locale : LOCALES) {

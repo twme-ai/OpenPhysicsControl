@@ -61,14 +61,14 @@ Evidence codes:
 | `vertical-plant-growth` | `BlockGrowEvent`, `BlockSpreadEvent`, `StructureGrowEvent` | Sugar cane, cactus, bamboo, kelp, and chorus | UT |
 | `vine-growth` | `BlockGrowEvent`, `BlockSpreadEvent` | Vines, cave vines, twisting/weeping vines, and glow lichen | UT |
 | `mushroom-growth` | `BlockGrowEvent`, `BlockSpreadEvent`, `StructureGrowEvent` | Small mushrooms and giant mushrooms/fungi | UT |
-| `tree-growth` | `StructureGrowEvent` | All tree species exposed by `TreeType` | UT |
+| `tree-growth` | `StructureGrowEvent` | All tree species exposed by `TreeType`, including planted mangrove propagules | UT |
 | `plant-spread` | `BlockSpreadEvent` | Grass, mycelium, and other remaining plant spread | UT |
 | `sculk-spread` | `SculkBloomEvent`, `BlockSpreadEvent` | Sculk catalyst bloom and sculk placement | UT |
 | `amethyst-growth` | `BlockGrowEvent`, `BlockSpreadEvent` | Amethyst bud and cluster stages | UT |
 | `dripstone-growth` | `BlockGrowEvent`, `BlockSpreadEvent` | Pointed dripstone growth | UT |
 | `turtle-egg-hatch` | `BlockGrowEvent` | Turtle egg cracking and hatching | UT |
 | `frogspawn-hatch` | `BlockFadeEvent` | Frogspawn hatching/removal | UT |
-| `bone-meal` | `BlockFertilizeEvent`, bonemeal `StructureGrowEvent` | Player and dispenser fertilization | API |
+| `bone-meal` | `BlockFertilizeEvent`, bonemeal `StructureGrowEvent` | Player and dispenser fertilization, including mangrove propagules | API |
 
 ## Entities and players
 
@@ -124,5 +124,6 @@ The following surfaces were inspected but are not presented as world-physics rul
 | Generic combat/effects | attacks, potions, poison, magic, armor, death, resurrection | Gameplay/combat scope. Only environmental fall/drowning and knockback controls are included. |
 | Explicit travel and posture | player teleport, portal entry, mounting, swimming/gliding toggles | Direct entity/player action rather than autonomous world simulation; portal *creation* remains covered. |
 | Chunk generation and data packs | terrain noise, carvers, structures generated with chunks | Occurs during generation rather than runtime physics and cannot be reversed safely by an event cancellation plugin. |
+| Unexposed block growth | Hanging mangrove propagule maturation from age 0 to 4 | Paper and Spigot change the block state directly. A post-change `BlockPhysicsEvent` is observable, but cancelling it does not revert the age change, and no cancellable pre-change growth event is exposed. |
 | Paper-only mechanics | `EntityMoveEvent`, `EntityInsideBlockEvent`, compost and dragon-egg Paper events | Excluded from the shared core where no equivalent Spigot 26.2 event exists. Portable Bukkit fallbacks are used when available. |
 | Pure presentation | sounds, particles, block display state, maps, signs | No physical state transition. Bell and note-block activation are included because they are redstone-driven machine outputs. |

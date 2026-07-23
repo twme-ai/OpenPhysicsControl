@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { createWriteStream } from 'node:fs'
-import { copyFile, mkdir, mkdtemp, stat, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, mkdtemp, readFile, readdir, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -139,6 +139,22 @@ function itemText (item) {
     // The direct fields above are sufficient on older Mineflayer versions.
   }
   return values.filter(Boolean).join(' ')
+}
+
+async function testRuleStorage (serverDir) {
+  const dataDirectory = join(serverDir, 'plugins/OpenPhysicsControl')
+  const defaults = await readFile(join(dataDirectory, 'default-rules.yml'), 'utf8')
+  assert.match(defaults, /^gravity: true$/m, 'missing default rule was not added')
+  assert.match(defaults, /^note-blocks: false$/m, 'custom default rule was overwritten')
+
+  const worldFiles = (await readdir(join(dataDirectory, 'worlds'))).sort()
+  assert.deepEqual(worldFiles, ['world.yml', 'world_nether.yml', 'world_the_end.yml'])
+  for (const file of worldFiles) {
+    const rules = await readFile(join(dataDirectory, 'worlds', file), 'utf8')
+    assert.match(rules, /^gravity: true$/m, `${file} did not inherit a missing true default`)
+    assert.match(rules, /^note-blocks: false$/m, `${file} did not inherit the configured false default`)
+  }
+  console.log('PASS default rules and world-name storage')
 }
 
 async function testLocalizedMenu () {
@@ -440,6 +456,8 @@ async function start () {
   await ensurePaper()
   const serverDir = await mkdtemp(join(tmpdir(), 'openphysicscontrol-mineflayer-'))
   await mkdir(join(serverDir, 'plugins'), { recursive: true })
+  await mkdir(join(serverDir, 'plugins/OpenPhysicsControl'), { recursive: true })
+  await writeFile(join(serverDir, 'plugins/OpenPhysicsControl/default-rules.yml'), 'note-blocks: false\n')
   await copyFile(pluginJar, join(serverDir, 'plugins/OpenPhysicsControl.jar'))
   await copyFile(paperCache, join(serverDir, 'paper.jar'))
   await writeFile(join(serverDir, 'eula.txt'), 'eula=true\n')
@@ -464,6 +482,7 @@ async function start () {
   server.stderr.on('data', chunk => process.stderr.write(`[paper] ${chunk}`))
   await waitForServer(/Enabling OpenPhysicsControl v[^\r\n]+/)
   await waitForServer(/Done \([^)]*\)!/)
+  await testRuleStorage(serverDir)
 
   await commands(
     'execute in minecraft:overworld run forceload add -16 -16 47 31'
