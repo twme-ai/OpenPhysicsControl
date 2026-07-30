@@ -4,6 +4,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.data.type.CaveVinesPlant;
 import org.bukkit.block.data.type.EndPortalFrame;
 import org.bukkit.block.data.type.MangrovePropagule;
@@ -49,6 +50,7 @@ import org.bukkit.event.entity.EntityBreedEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityCombustEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDamageByBlockEvent;
 import org.bukkit.event.entity.EntityEnterBlockEvent;
 import org.bukkit.event.entity.EntityEnterLoveModeEvent;
 import org.bukkit.event.entity.EntityExhaustionEvent;
@@ -81,6 +83,8 @@ import org.bukkit.event.world.TimeSkipEvent;
 import org.bukkit.event.vehicle.VehicleEntityCollisionEvent;
 import org.bukkit.inventory.Inventory;
 
+import java.util.List;
+
 public final class PhysicsEvents implements Listener {
     private final RuleStore rules;
 
@@ -92,8 +96,20 @@ public final class PhysicsEvents implements Listener {
         if (rule != null && !this.rules.enabled(world, rule)) event.setCancelled(true);
     }
 
+    private void control(Cancellable event, World world, Rule rule, Material material) {
+        if (rule != null && !this.rules.enabled(world, rule, material)) event.setCancelled(true);
+    }
+
+    private void control(Cancellable event, Block block, Rule rule) {
+        control(event, block.getWorld(), rule, block.getType());
+    }
+
     private boolean disabled(World world, Rule rule) {
         return !this.rules.enabled(world, rule);
+    }
+
+    private boolean disabled(World world, Rule rule, Material material) {
+        return !this.rules.enabled(world, rule, material);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -101,7 +117,7 @@ public final class PhysicsEvents implements Listener {
         Block block = event.getBlock();
         if (block.getType() != Material.MANGROVE_PROPAGULE
             || event.getChangedType() != Material.MANGROVE_PROPAGULE
-            || !disabled(block.getWorld(), Rule.TREE_GROWTH)
+            || !disabled(block.getWorld(), Rule.TREE_GROWTH, block.getType())
             || !event.getSourceBlock().equals(block)) return;
 
         if (!(block.getBlockData() instanceof MangrovePropagule current)
@@ -121,126 +137,129 @@ public final class PhysicsEvents implements Listener {
         Material material = event.getBlock().getType();
         Rule rule = material.hasGravity() || event.getChangedType().hasGravity()
             ? Rule.GRAVITY : Rule.BLOCK_UPDATES;
-        control(event, event.getBlock().getWorld(), rule);
+        control(event, event.getBlock(), rule);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void flow(BlockFromToEvent event) {
         Rule rule = event.getBlock().getType() == Material.DRAGON_EGG
             ? Rule.DRAGON_EGG_TELEPORT : PhysicsClassifier.flow(event.getBlock().getType());
-        control(event, event.getBlock().getWorld(), rule);
+        control(event, event.getBlock(), rule);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void fluidLevel(FluidLevelChangeEvent event) {
-        control(event, event.getBlock().getWorld(), PhysicsClassifier.flow(event.getBlock().getType()));
+        control(event, event.getBlock(), PhysicsClassifier.flow(event.getBlock().getType()));
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void spread(BlockSpreadEvent event) {
-        control(event, event.getBlock().getWorld(), PhysicsClassifier.spread(
+        control(event, event.getSource(), PhysicsClassifier.spread(
             event.getSource().getType(), event.getNewState().getType()));
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void burn(BlockBurnEvent event) {
-        control(event, event.getBlock().getWorld(), Rule.FIRE_BURN);
+        control(event, event.getBlock(), Rule.FIRE_BURN);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void ignite(BlockIgniteEvent event) {
-        control(event, event.getBlock().getWorld(), Rule.FIRE_IGNITE);
+        control(event, event.getBlock(), Rule.FIRE_IGNITE);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void decay(LeavesDecayEvent event) {
-        control(event, event.getBlock().getWorld(), Rule.LEAF_DECAY);
+        control(event, event.getBlock(), Rule.LEAF_DECAY);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void fade(BlockFadeEvent event) {
-        control(event, event.getBlock().getWorld(), PhysicsClassifier.fade(
+        control(event, event.getBlock(), PhysicsClassifier.fade(
             event.getBlock().getType(), event.getNewState().getType()));
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void moisture(MoistureChangeEvent event) {
-        control(event, event.getBlock().getWorld(), Rule.FARMLAND_DRY);
+        control(event, event.getBlock(), Rule.FARMLAND_DRY);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void grow(BlockGrowEvent event) {
-        control(event, event.getBlock().getWorld(), PhysicsClassifier.grow(
+        control(event, event.getBlock(), PhysicsClassifier.grow(
             event.getBlock().getType(), event.getNewState().getType()));
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void trees(StructureGrowEvent event) {
-        if (event.isFromBonemeal() && disabled(event.getWorld(), Rule.BONE_MEAL)) {
+        Material material = event.getLocation().getBlock().getType();
+        if (event.isFromBonemeal() && disabled(event.getWorld(), Rule.BONE_MEAL, material)) {
             event.setCancelled(true);
             return;
         }
-        control(event, event.getWorld(), PhysicsClassifier.structure(event.getSpecies()));
+        control(event, event.getWorld(), PhysicsClassifier.structure(event.getSpecies()), material);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void fertilize(BlockFertilizeEvent event) {
-        control(event, event.getBlock().getWorld(), Rule.BONE_MEAL);
+        control(event, event.getBlock(), Rule.BONE_MEAL);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void sculkBloom(SculkBloomEvent event) {
-        control(event, event.getBlock().getWorld(), Rule.SCULK_SPREAD);
+        control(event, event.getBlock(), Rule.SCULK_SPREAD);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void change(EntityChangeBlockEvent event) {
         if (isEndPortalFrameFilling(event)) {
-            control(event, event.getBlock().getWorld(), Rule.END_PORTAL_FRAME_FILLING);
+            control(event, event.getBlock(), Rule.END_PORTAL_FRAME_FILLING);
             return;
         }
         if (isGlowBerryHarvest(event)) {
-            control(event, event.getBlock().getWorld(), Rule.GLOW_BERRY_PICKING);
+            control(event, event.getBlock(), Rule.GLOW_BERRY_PICKING);
             return;
         }
         Rule rule;
+        Material material = event.getBlock().getType();
         if (event.getEntity() instanceof FallingBlock) {
             rule = Rule.GRAVITY;
+            material = ((FallingBlock) event.getEntity()).getBlockData().getMaterial();
         } else {
             rule = PhysicsClassifier.physicalInteraction(event.getBlock().getType());
             if (rule == null) rule = Rule.MOB_GRIEFING;
         }
-        control(event, event.getBlock().getWorld(), rule);
+        control(event, event.getBlock().getWorld(), rule, material);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void interact(EntityInteractEvent event) {
         Rule rule = PhysicsClassifier.physicalInteraction(event.getBlock().getType());
-        control(event, event.getBlock().getWorld(), rule == null ? Rule.MOB_GRIEFING : rule);
+        control(event, event.getBlock(), rule == null ? Rule.MOB_GRIEFING : rule);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void mobForm(EntityBlockFormEvent event) {
         Rule rule = event.getNewState().getType() == Material.FROSTED_ICE
             ? Rule.FROSTED_ICE : Rule.MOB_BLOCK_FORM;
-        control(event, event.getBlock().getWorld(), rule);
+        control(event, event.getBlock(), rule);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void form(BlockFormEvent event) {
         if (event instanceof EntityBlockFormEvent) return;
-        control(event, event.getBlock().getWorld(), PhysicsClassifier.form(
+        control(event, event.getBlock(), PhysicsClassifier.form(
             event.getBlock().getType(), event.getNewState().getType()));
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void entityExplosion(EntityExplodeEvent event) {
-        if (disabled(event.getLocation().getWorld(), Rule.EXPLOSION_BLOCK_DAMAGE)) event.blockList().clear();
+        controlExplosion(event.getLocation().getWorld(), event.blockList());
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void blockExplosion(BlockExplodeEvent event) {
-        if (disabled(event.getBlock().getWorld(), Rule.EXPLOSION_BLOCK_DAMAGE)) event.blockList().clear();
+        controlExplosion(event.getBlock().getWorld(), event.blockList());
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
@@ -253,55 +272,66 @@ public final class PhysicsEvents implements Listener {
         Block clicked = event.getClickedBlock();
         if (clicked == null) return;
         if (event.getAction() == Action.PHYSICAL) {
-            control(event, clicked.getWorld(), PhysicsClassifier.physicalInteraction(clicked.getType()));
+            control(event, clicked, PhysicsClassifier.physicalInteraction(clicked.getType()));
         } else if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-            control(event, clicked.getWorld(), rightClickRule(clicked.getType()));
+            control(event, clicked, rightClickRule(clicked.getType()));
         }
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void pistonExtend(BlockPistonExtendEvent event) {
-        control(event, event.getBlock().getWorld(), Rule.PISTONS);
+        controlPiston(event, event.getBlock(), event.getBlocks());
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void pistonRetract(BlockPistonRetractEvent event) {
-        control(event, event.getBlock().getWorld(), Rule.PISTONS);
+        controlPiston(event, event.getBlock(), event.getBlocks());
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void dispense(BlockDispenseEvent event) {
-        control(event, event.getBlock().getWorld(), Rule.DISPENSERS);
+        control(event, event.getBlock(), Rule.DISPENSERS);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void absorb(SpongeAbsorbEvent event) {
-        control(event, event.getBlock().getWorld(), Rule.SPONGE_ABSORB);
+        control(event, event.getBlock(), Rule.SPONGE_ABSORB);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void portal(PortalCreateEvent event) {
-        control(event, event.getWorld(), Rule.PORTAL_CREATION);
+        if (event.getBlocks().isEmpty()) {
+            control(event, event.getWorld(), Rule.PORTAL_CREATION);
+            return;
+        }
+        for (BlockState state : event.getBlocks()) {
+            if (disabled(event.getWorld(), Rule.PORTAL_CREATION, state.getType())) {
+                event.setCancelled(true);
+                return;
+            }
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void redstone(BlockRedstoneEvent event) {
-        if (disabled(event.getBlock().getWorld(), Rule.REDSTONE)) event.setNewCurrent(event.getOldCurrent());
+        if (disabled(event.getBlock().getWorld(), Rule.REDSTONE, event.getBlock().getType())) {
+            event.setNewCurrent(event.getOldCurrent());
+        }
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void vibration(BlockReceiveGameEvent event) {
-        control(event, event.getBlock().getWorld(), Rule.SCULK_VIBRATIONS);
+        control(event, event.getBlock(), Rule.SCULK_VIBRATIONS);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void prime(TNTPrimeEvent event) {
-        control(event, event.getBlock().getWorld(), Rule.TNT_PRIME);
+        control(event, event.getBlock(), Rule.TNT_PRIME);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void cauldron(CauldronLevelChangeEvent event) {
-        control(event, event.getBlock().getWorld(), Rule.CAULDRON_CHANGES);
+        control(event, event.getBlock(), Rule.CAULDRON_CHANGES);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
@@ -368,7 +398,7 @@ public final class PhysicsEvents implements Listener {
     public void enterBlock(EntityEnterBlockEvent event) {
         Material material = event.getBlock().getType();
         if (material == Material.BEEHIVE || material == Material.BEE_NEST) {
-            control(event, event.getBlock().getWorld(), Rule.BEEHIVE_ENTRY);
+            control(event, event.getBlock(), Rule.BEEHIVE_ENTRY);
         }
     }
 
@@ -390,7 +420,8 @@ public final class PhysicsEvents implements Listener {
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void projectileHit(ProjectileHitEvent event) {
         if (event.getHitBlock() == null || !(event.getEntity() instanceof AbstractArrow)) return;
-        if (this.rules.enabled(event.getEntity().getWorld(), Rule.BLOCK_HIT_PROJECTILE_REMOVAL)) {
+        if (this.rules.enabled(event.getEntity().getWorld(), Rule.BLOCK_HIT_PROJECTILE_REMOVAL,
+            event.getHitBlock().getType())) {
             event.getEntity().remove();
         }
     }
@@ -415,7 +446,7 @@ public final class PhysicsEvents implements Listener {
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void damage(EntityDamageEvent event) {
-        control(event, event.getEntity().getWorld(), PhysicsClassifier.damage(event));
+        control(event, event.getEntity().getWorld(), PhysicsClassifier.damage(event), damageSourceMaterial(event));
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
@@ -438,24 +469,32 @@ public final class PhysicsEvents implements Listener {
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void hopper(InventoryMoveItemEvent event) {
-        World world = inventoryWorld(event.getInitiator(), event.getSource(), event.getDestination());
-        if (world != null) control(event, world, Rule.HOPPERS);
+        Block block = inventoryBlock(event.getInitiator(), event.getSource(), event.getDestination());
+        if (block != null) control(event, block, Rule.HOPPERS);
+        else {
+            World world = inventoryWorld(event.getInitiator(), event.getSource(), event.getDestination());
+            if (world != null) control(event, world, Rule.HOPPERS);
+        }
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void hopperPickup(InventoryPickupItemEvent event) {
-        World world = inventoryWorld(event.getInventory());
-        if (world != null) control(event, world, Rule.HOPPERS);
+        Block block = inventoryBlock(event.getInventory());
+        if (block != null) control(event, block, Rule.HOPPERS);
+        else {
+            World world = inventoryWorld(event.getInventory());
+            if (world != null) control(event, world, Rule.HOPPERS);
+        }
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void furnaceBurn(FurnaceBurnEvent event) {
-        control(event, event.getBlock().getWorld(), Rule.FURNACES);
+        control(event, event.getBlock(), Rule.FURNACES);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void furnaceSmelt(FurnaceSmeltEvent event) {
-        control(event, event.getBlock().getWorld(), Rule.FURNACES);
+        control(event, event.getBlock(), Rule.FURNACES);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
@@ -463,32 +502,49 @@ public final class PhysicsEvents implements Listener {
         String material = event.getBlock().getType().name();
         Rule rule = material.equals("CAMPFIRE") || material.equals("SOUL_CAMPFIRE")
             ? Rule.CAMPFIRE_COOKING : Rule.FURNACES;
-        control(event, event.getBlock().getWorld(), rule);
+        control(event, event.getBlock(), rule);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void brew(BrewEvent event) {
-        control(event, event.getBlock().getWorld(), Rule.BREWING);
+        control(event, event.getBlock(), Rule.BREWING);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void brewingFuel(BrewingStandFuelEvent event) {
-        control(event, event.getBlock().getWorld(), Rule.BREWING);
+        control(event, event.getBlock(), Rule.BREWING);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void craft(CrafterCraftEvent event) {
-        control(event, event.getBlock().getWorld(), Rule.CRAFTER);
+        control(event, event.getBlock(), Rule.CRAFTER);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void bell(BellRingEvent event) {
-        control(event, event.getBlock().getWorld(), Rule.BELL_RING);
+        control(event, event.getBlock(), Rule.BELL_RING);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void note(NotePlayEvent event) {
-        control(event, event.getBlock().getWorld(), Rule.NOTE_BLOCKS);
+        control(event, event.getBlock(), Rule.NOTE_BLOCKS);
+    }
+
+    private void controlExplosion(World world, List<Block> affectedBlocks) {
+        affectedBlocks.removeIf(block -> disabled(world, Rule.EXPLOSION_BLOCK_DAMAGE, block.getType()));
+    }
+
+    private void controlPiston(Cancellable event, Block piston, List<Block> movedBlocks) {
+        if (movedBlocks.isEmpty()) {
+            control(event, piston.getWorld(), Rule.PISTONS);
+            return;
+        }
+        for (Block moved : movedBlocks) {
+            if (disabled(piston.getWorld(), Rule.PISTONS, moved.getType())) {
+                event.setCancelled(true);
+                return;
+            }
+        }
     }
 
     private static World inventoryWorld(Inventory... inventories) {
@@ -498,6 +554,23 @@ public final class PhysicsEvents implements Listener {
             if (location != null && location.getWorld() != null) return location.getWorld();
         }
         return null;
+    }
+
+    private static Block inventoryBlock(Inventory... inventories) {
+        for (Inventory inventory : inventories) {
+            if (inventory == null) continue;
+            Location location = inventory.getLocation();
+            if (location != null && location.getWorld() != null) return location.getBlock();
+        }
+        return null;
+    }
+
+    private static Material damageSourceMaterial(EntityDamageEvent event) {
+        if (!(event instanceof EntityDamageByBlockEvent byBlock)) return null;
+        BlockState state = byBlock.getDamagerBlockState();
+        if (state != null) return state.getType();
+        Block block = byBlock.getDamager();
+        return block == null ? null : block.getType();
     }
 
     private static boolean isEndPortalFrameFilling(EntityChangeBlockEvent event) {

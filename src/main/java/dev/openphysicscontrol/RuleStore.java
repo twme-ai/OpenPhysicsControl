@@ -1,6 +1,8 @@
 package dev.openphysicscontrol;
 
+import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -10,11 +12,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 public final class RuleStore {
     private static final String DEFAULTS_RESOURCE = "default-rules.yml";
@@ -28,15 +33,20 @@ public final class RuleStore {
 
     private final JavaPlugin plugin;
     private final Map<UUID, Map<Rule, Boolean>> states = new ConcurrentHashMap<>();
+    private final Map<UUID, Map<Rule, Map<Material, Boolean>>> materialStates = new ConcurrentHashMap<>();
     private volatile Map<Rule, Boolean> defaults = allDefaults();
+    private volatile Map<Rule, Map<Material, Boolean>> materialDefaults = Map.of();
 
     public RuleStore(JavaPlugin plugin) {
         this.plugin = plugin;
     }
 
     public synchronized void reload() {
-        this.defaults = loadDefaults();
+        Defaults loadedDefaults = loadDefaults();
+        this.defaults = loadedDefaults.rules();
+        this.materialDefaults = loadedDefaults.materialOverrides();
         this.states.clear();
+        this.materialStates.clear();
         for (World world : this.plugin.getServer().getWorlds()) load(world);
     }
 
@@ -60,11 +70,15 @@ public final class RuleStore {
             }
         }
         this.states.put(world.getUID(), Collections.unmodifiableMap(values));
+        this.materialStates.put(world.getUID(), mergeMaterialOverrides(
+            this.materialDefaults, parseMaterialOverrides(yaml, "material-overrides", this.plugin.getLogger()::warning,
+                Material::isBlock)));
         if (changed) save(yaml, file);
     }
 
     public void unload(World world) {
         this.states.remove(world.getUID());
+        this.materialStates.remove(world.getUID());
     }
 
     public boolean enabled(World world, Rule rule) {
@@ -74,6 +88,19 @@ public final class RuleStore {
             worldRules = this.states.get(world.getUID());
         }
         return worldRules.getOrDefault(rule, this.defaults.getOrDefault(rule, rule.defaultEnabled()));
+    }
+
+    public boolean enabled(World world, Rule rule, Material material) {
+        if (material == null) return enabled(world, rule);
+        if (!this.states.containsKey(world.getUID())) load(world);
+        Map<Material, Boolean> overrides = this.materialStates.getOrDefault(world.getUID(), Map.of()).get(rule);
+        if (overrides != null && overrides.containsKey(material)) return overrides.get(material);
+        return enabled(world, rule);
+    }
+
+    public int materialOverrideCount(World world, Rule rule) {
+        if (!this.states.containsKey(world.getUID())) load(world);
+        return this.materialStates.getOrDefault(world.getUID(), Map.of()).getOrDefault(rule, Map.of()).size();
     }
 
     public synchronized boolean set(World world, Rule rule, Boolean requested) {
@@ -96,7 +123,42 @@ public final class RuleStore {
         return value;
     }
 
-    private Map<Rule, Boolean> loadDefaults() {
+    public synchronized boolean setMaterial(World world, Rule rule, Material material, boolean requested) {
+        if (!material.isBlock()) throw new IllegalArgumentException(material + " is not a block material");
+        if (!this.states.containsKey(world.getUID())) load(world);
+        Map<Rule, Map<Material, Boolean>> updated = mutableMaterialOverrides(
+            this.materialStates.getOrDefault(world.getUID(), Map.of()));
+        updated.computeIfAbsent(rule, ignored -> new HashMap<>()).put(material, requested);
+        this.materialStates.put(world.getUID(), freezeMaterialOverrides(updated));
+
+        File file = file(world);
+        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
+        yaml.set(materialPath(rule, material), requested);
+        save(yaml, file);
+        return requested;
+    }
+
+    public synchronized void clearMaterial(World world, Rule rule, Material material) {
+        if (!material.isBlock()) throw new IllegalArgumentException(material + " is not a block material");
+        if (!this.states.containsKey(world.getUID())) load(world);
+        Map<Rule, Map<Material, Boolean>> updated = mutableMaterialOverrides(
+            this.materialStates.getOrDefault(world.getUID(), Map.of()));
+        Map<Material, Boolean> ruleOverrides = updated.get(rule);
+        if (ruleOverrides != null) {
+            ruleOverrides.remove(material);
+            if (ruleOverrides.isEmpty()) updated.remove(rule);
+        }
+        Boolean defaultValue = this.materialDefaults.getOrDefault(rule, Map.of()).get(material);
+        if (defaultValue != null) updated.computeIfAbsent(rule, ignored -> new HashMap<>()).put(material, defaultValue);
+        this.materialStates.put(world.getUID(), freezeMaterialOverrides(updated));
+
+        File file = file(world);
+        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
+        yaml.set(materialPath(rule, material), null);
+        save(yaml, file);
+    }
+
+    private Defaults loadDefaults() {
         File file = new File(this.plugin.getDataFolder(), DEFAULTS_RESOURCE);
         if (!file.isFile()) this.plugin.saveResource(DEFAULTS_RESOURCE, false);
         YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
@@ -110,8 +172,102 @@ public final class RuleStore {
                 changed = true;
             }
         }
+        if (!yaml.isSet("material-overrides")) {
+            yaml.set("material-overrides", Map.of());
+            changed = true;
+        }
         if (changed) save(yaml, file);
-        return Collections.unmodifiableMap(values);
+        return new Defaults(Collections.unmodifiableMap(values),
+            parseMaterialOverrides(yaml, "material-overrides", this.plugin.getLogger()::warning, Material::isBlock));
+    }
+
+    static Map<Rule, Map<Material, Boolean>> parseMaterialOverrides(YamlConfiguration yaml, String path) {
+        return parseMaterialOverrides(yaml, path, Material::isBlock);
+    }
+
+    static Map<Rule, Map<Material, Boolean>> parseMaterialOverrides(
+        YamlConfiguration yaml, String path, Predicate<Material> isBlock) {
+        return parseMaterialOverrides(yaml, path, ignored -> { }, isBlock);
+    }
+
+    private static Map<Rule, Map<Material, Boolean>> parseMaterialOverrides(
+        YamlConfiguration yaml, String path, Consumer<String> warn, Predicate<Material> isBlock) {
+        ConfigurationSection root = yaml.getConfigurationSection(path);
+        if (root == null) return Map.of();
+        Map<Rule, Map<Material, Boolean>> parsed = new EnumMap<>(Rule.class);
+        for (String rawRule : root.getKeys(false)) {
+            Rule rule;
+            try {
+                rule = Rule.parse(rawRule);
+            } catch (IllegalArgumentException exception) {
+                warn.accept("Ignoring unknown material override rule '" + rawRule + "' in " + path + ".");
+                continue;
+            }
+            ConfigurationSection materials = root.getConfigurationSection(rawRule);
+            if (materials == null) {
+                warn.accept("Ignoring material overrides for " + rawRule + "; it must be a YAML section.");
+                continue;
+            }
+            Map<Material, Boolean> values = new HashMap<>();
+            for (String rawMaterial : materials.getKeys(false)) {
+                Material material = blockMaterial(rawMaterial, isBlock);
+                if (material == null) {
+                    warn.accept("Ignoring unknown or non-block material '" + rawMaterial + "' for " + rawRule + ".");
+                    continue;
+                }
+                if (!materials.isBoolean(rawMaterial)) {
+                    warn.accept("Ignoring non-boolean material override " + rawRule + "." + rawMaterial + ".");
+                    continue;
+                }
+                values.put(material, materials.getBoolean(rawMaterial));
+            }
+            if (!values.isEmpty()) parsed.put(rule, values);
+        }
+        return freezeMaterialOverrides(parsed);
+    }
+
+    static Material blockMaterial(String input) {
+        return blockMaterial(input, Material::isBlock);
+    }
+
+    private static Material blockMaterial(String input, Predicate<Material> isBlock) {
+        try {
+            Material material = Material.valueOf(input.trim().toUpperCase(Locale.ROOT));
+            return isBlock.test(material) ? material : null;
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
+    }
+
+    private static String materialPath(Rule rule, Material material) {
+        return "material-overrides." + rule.key() + "." + material.name();
+    }
+
+    private static Map<Rule, Map<Material, Boolean>> mergeMaterialOverrides(
+        Map<Rule, Map<Material, Boolean>> base, Map<Rule, Map<Material, Boolean>> overrides) {
+        Map<Rule, Map<Material, Boolean>> merged = mutableMaterialOverrides(base);
+        for (Map.Entry<Rule, Map<Material, Boolean>> entry : overrides.entrySet()) {
+            merged.computeIfAbsent(entry.getKey(), ignored -> new HashMap<>()).putAll(entry.getValue());
+        }
+        return freezeMaterialOverrides(merged);
+    }
+
+    private static Map<Rule, Map<Material, Boolean>> mutableMaterialOverrides(
+        Map<Rule, Map<Material, Boolean>> source) {
+        Map<Rule, Map<Material, Boolean>> copy = new EnumMap<>(Rule.class);
+        for (Map.Entry<Rule, Map<Material, Boolean>> entry : source.entrySet()) {
+            copy.put(entry.getKey(), new HashMap<>(entry.getValue()));
+        }
+        return copy;
+    }
+
+    private static Map<Rule, Map<Material, Boolean>> freezeMaterialOverrides(
+        Map<Rule, Map<Material, Boolean>> source) {
+        Map<Rule, Map<Material, Boolean>> frozen = new EnumMap<>(Rule.class);
+        for (Map.Entry<Rule, Map<Material, Boolean>> entry : source.entrySet()) {
+            frozen.put(entry.getKey(), Collections.unmodifiableMap(new HashMap<>(entry.getValue())));
+        }
+        return Collections.unmodifiableMap(frozen);
     }
 
     private File file(World world) {
@@ -233,5 +389,8 @@ public final class RuleStore {
         EnumMap<Rule, Boolean> values = new EnumMap<>(Rule.class);
         for (Rule rule : Rule.values()) values.put(rule, rule.defaultEnabled());
         return Collections.unmodifiableMap(values);
+    }
+
+    private record Defaults(Map<Rule, Boolean> rules, Map<Rule, Map<Material, Boolean>> materialOverrides) {
     }
 }

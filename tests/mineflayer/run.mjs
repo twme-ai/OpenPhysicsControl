@@ -15,6 +15,7 @@ const PAPER_BUILD = 132
 const PAPER_SHA256 = '5ffef465eeeb5f2a3c23a24419d97c51afd7dbb4923ff42df9a3f58bba1ccfba'
 const PAPER_URL = 'https://fill-data.papermc.io/v1/objects/5ffef465eeeb5f2a3c23a24419d97c51afd7dbb4923ff42df9a3f58bba1ccfba/paper-1.21.11-132.jar'
 const PORT = Number(process.env.OPC_TEST_PORT ?? 25578)
+const configuredServerDirectory = process.env.OPC_TEST_SERVER_DIR
 const here = dirname(fileURLToPath(import.meta.url))
 const project = resolve(here, '../..')
 const pluginJar = join(project, 'build/libs/OpenPhysicsControl.jar')
@@ -188,6 +189,7 @@ async function testRuleStorage (serverDir) {
   const defaults = await readFile(join(dataDirectory, 'default-rules.yml'), 'utf8')
   assert.match(defaults, /^gravity: true$/m, 'missing default rule was not added')
   assert.match(defaults, /^note-blocks: false$/m, 'custom default rule was overwritten')
+  assert.match(defaults, /^    GRAVEL: false$/m, 'custom default material override was overwritten')
 
   const worldFiles = (await readdir(join(dataDirectory, 'worlds'))).sort()
   assert.deepEqual(worldFiles, ['world.yml', 'world_nether.yml', 'world_the_end.yml'])
@@ -195,14 +197,16 @@ async function testRuleStorage (serverDir) {
     const rules = await readFile(join(dataDirectory, 'worlds', file), 'utf8')
     assert.match(rules, /^note-blocks: false$/m, `${file} did not inherit the configured false default`)
     if (file === 'world.yml') {
-      assert.match(rules, /^gravity: false$/m, 'legacy gravity setting was not imported')
+      assert.match(rules, /^gravity: true$/m, 'missing gravity default was not added')
+      assert.match(rules, /^    GRAVEL: false$/m, 'legacy gravel override was not imported')
       assert.match(rules, /^bone-meal: false$/m, 'legacy bone meal alias was not imported')
       assert.match(rules, /^end-portal-frame-filling: false$/m, 'legacy End portal frame setting was not imported')
       assert.match(rules, /^glow-berry-picking: false$/m, 'legacy glow berry setting was not imported')
       assert.match(rules, /^block-hit-projectile-removal: true$/m,
         'legacy block-hit projectile cleanup setting was not imported')
     } else if (file === 'world_nether.yml') {
-      assert.match(rules, /^crop-growth: false$/m, 'pre-1.1 legacy world section was not imported')
+      assert.match(rules, /^crop-growth: true$/m, 'missing crop growth default was not added')
+      assert.match(rules, /^    WHEAT: false$/m, 'pre-1.1 legacy wheat override was not imported')
       assert.match(rules, /^gravity: true$/m, `${file} did not inherit a missing true default`)
     } else {
       assert.match(rules, /^gravity: true$/m, `${file} did not inherit a missing true default`)
@@ -337,6 +341,33 @@ async function testGravity () {
   await delay(1200)
   await expectNotBlock([2, 105, 0], 'sand', 'gravity on')
   console.log('PASS gravity')
+}
+
+async function testMaterialOverrides () {
+  await commands(
+    'opc set gravity off world',
+    'opc material gravity sand on world',
+    'setblock 3 105 0 minecraft:sand'
+  )
+  await delay(1200)
+  await expectNotBlock([3, 105, 0], 'sand', 'gravity sand override on')
+
+  await commands('opc set gravity on world', 'setblock 4 105 0 minecraft:gravel')
+  await delay(1200)
+  await expectBlock([4, 105, 0], 'gravel', 'default gravity gravel override off')
+
+  await commands('opc material gravity gravel on world', 'setblock 4 105 0 minecraft:gravel')
+  await delay(1200)
+  await expectNotBlock([4, 105, 0], 'gravel', 'world gravity gravel override on')
+
+  await commands(
+    'opc material gravity gravel clear world',
+    'setblock 4 105 0 minecraft:gravel'
+  )
+  await delay(1200)
+  await expectBlock([4, 105, 0], 'gravel', 'cleared gravity gravel override')
+  await commands('opc material gravity sand clear world', 'setblock 3 105 0 air', 'setblock 4 105 0 air')
+  console.log('PASS per-material overrides')
 }
 
 async function testWaterFlow () {
@@ -647,6 +678,15 @@ async function testExplosionDamage () {
   await expectBlock([21, 101, 0], 'white_wool', 'explosion block damage off')
 
   await commands(
+    'opc material explosion-block-damage white_wool on world',
+    'fill 20 99 -1 22 101 1 minecraft:white_wool',
+    'summon minecraft:tnt 21 102 0 {fuse:0}'
+  )
+  await delay(5200)
+  await expectNotBlock([21, 101, 0], 'white_wool', 'explosion white wool override on')
+
+  await commands(
+    'opc material explosion-block-damage white_wool clear world',
     'opc set explosion-block-damage on world',
     'fill 20 99 -1 22 101 1 minecraft:white_wool',
     'summon minecraft:tnt 21 102 0 {fuse:0}'
@@ -759,11 +799,14 @@ async function testFireAndFreezeDamage () {
 async function start () {
   await stat(pluginJar)
   await ensurePaper()
-  const serverDir = await mkdtemp(join(tmpdir(), 'openphysicscontrol-mineflayer-'))
+  const serverDir = configuredServerDirectory
+    ? resolve(configuredServerDirectory)
+    : await mkdtemp(join(tmpdir(), 'openphysicscontrol-mineflayer-'))
   await mkdir(join(serverDir, 'plugins'), { recursive: true })
   await mkdir(join(serverDir, 'plugins/OpenPhysicsControl'), { recursive: true })
   await mkdir(join(serverDir, 'plugins/PhysicsControl/triggers'), { recursive: true })
-  await writeFile(join(serverDir, 'plugins/OpenPhysicsControl/default-rules.yml'), 'note-blocks: false\n')
+  await writeFile(join(serverDir, 'plugins/OpenPhysicsControl/default-rules.yml'),
+    'note-blocks: false\nmaterial-overrides:\n  gravity:\n    GRAVEL: false\n')
   await writeFile(join(serverDir, 'plugins/PhysicsControl/triggers/world.yml'),
     'GRAVEL_FALLING: false\nBONE_MEAL_USAGE: false\nEND_PORTAL_FRAMES_FILLING: false\nGLOW_BERRIES_PICKING: false\nBLOCK_HIT_PROJECTILES_REMOVING: true\n')
   await writeFile(join(serverDir, 'plugins/PhysicsControl/config.yml'), 'world_nether:\n  WHEAT_GROWING: false\n')
@@ -826,6 +869,7 @@ async function start () {
 
   await testLocalizedMenu()
   await testGravity()
+  await testMaterialOverrides()
   await testWaterFlow()
   await testLavaFlow()
   await testFluidReactions()

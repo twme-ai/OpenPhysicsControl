@@ -2,6 +2,8 @@ package dev.openphysicscontrol;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.bukkit.Material;
+import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -45,5 +47,22 @@ final class RuleStoreTest {
         File selected = RuleStore.resolveWorldFile(this.temporaryDirectory.toFile(), "creative", secondId);
         assertEquals("gravity: true\n", Files.readString(selected.toPath()));
         assertTrue(Files.exists(secondLegacy));
+    }
+
+    @Test
+    void parsesExactBlockMaterialOverrides() {
+        YamlConfiguration yaml = new YamlConfiguration();
+        yaml.set("material-overrides.gravity.SAND", true);
+        yaml.set("material-overrides.gravity.GRAVEL", false);
+        yaml.set("material-overrides.crop-growth.WHEAT", false);
+        yaml.set("material-overrides.crop-growth.BONE_MEAL", true);
+        yaml.set("material-overrides.unknown-rule.STONE", true);
+
+        var overrides = RuleStore.parseMaterialOverrides(yaml, "material-overrides",
+            material -> material != Material.BONE_MEAL);
+        assertEquals(Boolean.TRUE, overrides.get(Rule.GRAVITY).get(Material.SAND));
+        assertEquals(Boolean.FALSE, overrides.get(Rule.GRAVITY).get(Material.GRAVEL));
+        assertEquals(Boolean.FALSE, overrides.get(Rule.CROP_GROWTH).get(Material.WHEAT));
+        assertFalse(overrides.containsKey(Rule.BONE_MEAL));
     }
 }

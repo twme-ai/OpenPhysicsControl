@@ -9,7 +9,7 @@ commands:
   openphysics:
     aliases: [ophysics, opc, pc]
     description: 'Manage world physics rules'
-    usage: '/<command> [set|language|reload]'
+    usage: '/<command> [set|material|language|reload]'
 permissions:
   openphysicscontrol.menu:
     default: op

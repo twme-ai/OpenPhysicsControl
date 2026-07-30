@@ -17,6 +17,7 @@ OpenPhysicsControl 是從零撰寫、採 MIT 授權的 Bukkit 世界物理控制
 
 ```text
 /opc set <rule> <on|off|toggle> [world]
+/opc material <rule> <material> <on|off|toggle|clear> [world]
 /opc language [auto|en|zh_tw]
 /opc reload
 ```
@@ -26,6 +27,28 @@ OpenPhysicsControl 是從零撰寫、採 MIT 授權的 Bukkit 世界物理控制
 `oxygen-depletion` 的 `off` 只會阻止水中氧氣減少，離水後仍會恢復氧氣；`drowning-damage` 是獨立規則。`fire-damage` 不會攔截仙人掌、甜莓叢或尖滴水石等一般接觸傷害，這些不屬於火焰與高溫控制範圍。
 
 `default-rules.yml` 會在首次啟動時產生，並列出全部規則；除上述清理選項外，`true` 代表物理運作，`false` 代表停止。世界檔已有的值優先，只有新世界或世界檔缺少的規則才採用預設值。從舊版升級時，插件會在同名世界檔尚不存在的前提下，自動將 `<world-uuid>.yml` 搬移為 `<世界名稱>.yml`，不會覆寫既有名稱檔。世界名稱中的路徑或系統保留字元會以百分比編碼。
+
+### 依方塊材質細化
+
+每個規則仍保有原本的一鍵 `true`/`false` 基準值，也可用精確 Bukkit `Material` 名稱覆寫特定方塊。世界檔的 `material-overrides` 優先於 `default-rules.yml`；`on` 代表該材質的物理運作，`off` 代表停止，`clear` 則移除世界覆寫並回到預設或基準值。
+
+```yaml
+# worlds/survival.yml
+gravity: false
+crop-growth: true
+explosion-block-damage: false
+
+material-overrides:
+  gravity:
+    SAND: true
+    RED_SAND: true
+  crop-growth:
+    WHEAT: false
+  explosion-block-damage:
+    WHITE_WOOL: true
+```
+
+上述範例會停止所有掉落方塊，僅保留沙與紅沙；停止小麥生長但保留其他作物；停止爆炸破壞方塊但仍允許破壞白色羊毛。一般方塊事件會以變化前的方塊為準。活塞則檢查所有被移動的方塊，任何被停止的材質都會取消整次推動；爆炸則逐一從受影響清單保護被停止的材質。天氣、生怪、氧氣與純實體事件沒有方塊主體，仍只採用規則的一鍵基準值。
 
 ## 從 Dymeth PhysicsControl 遷移
 

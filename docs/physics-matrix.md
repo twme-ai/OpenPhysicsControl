@@ -10,6 +10,14 @@ Evidence codes:
 - **UT**: material/reason routing covered by a unit test.
 - **API**: handler is bound to the listed Bukkit event and compiled against both Paper and Spigot 26.2; deterministic black-box coverage is not yet available.
 
+## Per-material overrides
+
+Every world may retain its existing scalar rule value and add `material-overrides.<rule>.<MATERIAL>: true|false`. The exact Bukkit `Material` override wins over the scalar rule value. World values win over `default-rules.yml`; `clear` removes a world value and returns to the default override or scalar baseline. Unknown or non-block material names are ignored with a server warning.
+
+For ordinary block events, the filtered material is the block whose old state is changing: this covers gravity, updates, flow, fades, growth, form, fire burn/ignite, redstone, physical interaction, cauldrons, machines, hives, and block-hit projectiles. `BlockSpreadEvent` uses its source block and `StructureGrowEvent` uses its growth-location block. A `fire-damage` override is available only for a concrete block damage source such as magma or a campfire; lava, burning, and melting have no portable block source and use the scalar rule.
+
+Two event surfaces have dedicated behavior. `explosion-block-damage` evaluates every affected block, so a disabled material is protected while other materials may still be destroyed. `pistons` evaluates every moved block: a blocked material cancels the full piston action, because Bukkit cannot safely omit one member of a single movement. World-wide and entity-only rules, including weather, time, spawning, oxygen, damage without a source block, and vehicle collision, intentionally remain scalar.
+
 ## Blocks and signals
 
 | Rule | Bukkit event surface | Controlled behavior | Evidence |

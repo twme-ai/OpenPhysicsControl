@@ -124,9 +124,15 @@ public final class RulesMenu implements InventoryHolder {
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return;
         this.plugin.messages().name(meta, this.viewer, rule.messageKey(), Map.of());
-        this.plugin.messages().lore(meta, this.viewer, List.of(
-            enabled ? "menu-state-on" : "menu-state-off",
-            enabled ? "click-stop" : "click-resume"));
+        List<String> lore = new ArrayList<>();
+        lore.add(this.plugin.messages().render(this.viewer, enabled ? "menu-state-on" : "menu-state-off", Map.of()));
+        int overrides = this.plugin.rules().materialOverrideCount(this.world, rule);
+        if (overrides > 0) {
+            lore.add(this.plugin.messages().render(this.viewer, "menu-material-overrides", Map.of(
+                "count", Integer.toString(overrides))));
+        }
+        lore.add(this.plugin.messages().render(this.viewer, enabled ? "click-stop" : "click-resume", Map.of()));
+        meta.setLore(lore);
         meta.addItemFlags(ItemFlag.values());
         meta.setEnchantmentGlintOverride(enabled);
         item.setItemMeta(meta);

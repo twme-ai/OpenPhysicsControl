@@ -1,6 +1,7 @@
 package dev.openphysicscontrol;
 
 import org.bukkit.World;
+import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -47,6 +48,7 @@ public final class OpenPhysicsControlPlugin extends JavaPlugin implements Listen
         if (args.length == 0) return openMenu(sender);
         return switch (args[0].toLowerCase(Locale.ROOT)) {
             case "set" -> setRule(sender, args);
+            case "material", "materials" -> setMaterial(sender, args);
             case "language", "lang" -> language(sender, args);
             case "reload" -> reload(sender);
             default -> openMenu(sender);
@@ -111,6 +113,66 @@ public final class OpenPhysicsControlPlugin extends JavaPlugin implements Listen
         return true;
     }
 
+    private boolean setMaterial(CommandSender sender, String[] args) {
+        if (!sender.isOp() && !sender.hasPermission("openphysicscontrol.set")) {
+            this.messages.send(sender, "no-permission");
+            return true;
+        }
+        if (args.length < 4) return false;
+        Rule rule;
+        try {
+            rule = Rule.parse(args[1]);
+        } catch (IllegalArgumentException exception) {
+            this.messages.send(sender, "rule-not-found", Map.of("rule", args[1]));
+            return true;
+        }
+        Material material = RuleStore.blockMaterial(args[2]);
+        if (material == null) {
+            this.messages.send(sender, "block-not-found", Map.of("block", args[2]));
+            return true;
+        }
+        World world;
+        if (args.length >= 5) {
+            world = this.getServer().getWorld(args[4]);
+        } else if (sender instanceof Player player) {
+            world = player.getWorld();
+        } else {
+            return false;
+        }
+        if (world == null) {
+            this.messages.send(sender, "world-not-found", Map.of("world", args.length >= 5 ? args[4] : "?"));
+            return true;
+        }
+        String state = args[3].toLowerCase(Locale.ROOT);
+        if (state.equals("clear") || state.equals("reset")) {
+            this.rules.clearMaterial(world, rule, material);
+            this.messages.send(sender, "material-override-cleared", Map.of(
+                "rule", this.messages.plain(sender, rule.messageKey()),
+                "block", material.name(),
+                "world", world.getName()
+            ));
+            return true;
+        }
+        Boolean requested = switch (state) {
+            case "on", "true", "enable" -> Boolean.TRUE;
+            case "off", "false", "disable" -> Boolean.FALSE;
+            case "toggle" -> !this.rules.enabled(world, rule, material);
+            default -> null;
+        };
+        if (requested == null) {
+            this.messages.send(sender, "invalid-material-state");
+            return true;
+        }
+        this.rules.setMaterial(world, rule, material, requested);
+        this.messages.send(sender, "material-override-changed", Map.of(
+            "rule", this.messages.plain(sender, rule.messageKey()),
+            "block", material.name(),
+            "world", world.getName(),
+            "state", this.messages.plain(sender, requested ? "state-on" : "state-off")
+        ));
+        return true;
+    }
+
     private boolean language(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
             this.messages.send(sender, "players-only");
@@ -149,12 +211,22 @@ public final class OpenPhysicsControlPlugin extends JavaPlugin implements Listen
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         List<String> options = new ArrayList<>();
         if (args.length == 1) {
-            options.addAll(List.of("set", "language", "reload"));
+            options.addAll(List.of("set", "material", "language", "reload"));
         } else if (args.length == 2 && args[0].equalsIgnoreCase("set")) {
             for (Rule rule : Rule.values()) options.add(rule.key());
         } else if (args.length == 3 && args[0].equalsIgnoreCase("set")) {
             options.addAll(List.of("on", "off", "toggle"));
         } else if (args.length == 4 && args[0].equalsIgnoreCase("set")) {
+            for (World world : this.getServer().getWorlds()) options.add(world.getName());
+        } else if (args.length == 2 && (args[0].equalsIgnoreCase("material") || args[0].equalsIgnoreCase("materials"))) {
+            for (Rule rule : Rule.values()) options.add(rule.key());
+        } else if (args.length == 3 && (args[0].equalsIgnoreCase("material") || args[0].equalsIgnoreCase("materials"))) {
+            for (Material material : Material.values()) {
+                if (material.isBlock()) options.add(material.name().toLowerCase(Locale.ROOT));
+            }
+        } else if (args.length == 4 && (args[0].equalsIgnoreCase("material") || args[0].equalsIgnoreCase("materials"))) {
+            options.addAll(List.of("on", "off", "toggle", "clear"));
+        } else if (args.length == 5 && (args[0].equalsIgnoreCase("material") || args[0].equalsIgnoreCase("materials"))) {
             for (World world : this.getServer().getWorlds()) options.add(world.getName());
         } else if (args.length == 2 && (args[0].equalsIgnoreCase("language") || args[0].equalsIgnoreCase("lang"))) {
             options.add("auto");

@@ -44,7 +44,9 @@ final class LegacyPhysicsControlMigratorTest {
         assertEquals(source.toFile(), result.source());
         assertEquals(8, result.importedRules());
         assertTrue(result.unsupportedTriggers().isEmpty());
-        assertFalse(migrated.getBoolean("gravity"));
+        assertFalse(migrated.contains("gravity"));
+        assertFalse(migrated.getBoolean("material-overrides.gravity.GRAVEL"));
+        assertTrue(migrated.getBoolean("material-overrides.gravity.SAND"));
         assertFalse(migrated.getBoolean("water-flow"));
         assertFalse(migrated.getBoolean("mob-griefing"));
         assertFalse(migrated.getBoolean("frogspawn-hatch"));
@@ -74,7 +76,8 @@ final class LegacyPhysicsControlMigratorTest {
         assertTrue(result.sourceFound());
         assertEquals(source.toFile(), result.source());
         assertEquals(2, result.importedRules());
-        assertFalse(migrated.getBoolean("crop-growth"));
+        assertFalse(migrated.contains("crop-growth"));
+        assertFalse(migrated.getBoolean("material-overrides.crop-growth.WHEAT"));
         assertFalse(migrated.getBoolean("bone-meal"));
     }
 
@@ -125,11 +128,26 @@ final class LegacyPhysicsControlMigratorTest {
             Rule.MUSHROOM_GROWTH, Rule.STEM_GROWTH, Rule.CROP_GROWTH, Rule.AMETHYST_GROWTH,
             Rule.VERTICAL_PLANT_GROWTH, Rule.TREE_GROWTH, Rule.VINE_GROWTH, Rule.DRIPSTONE_GROWTH
         );
+        Set<Rule> materialMapped = Set.of(
+            Rule.GRAVITY, Rule.BLOCK_UPDATES, Rule.FARMLAND_TRAMPLE, Rule.DRAGON_EGG_TELEPORT,
+            Rule.TURTLE_EGG_TRAMPLE, Rule.DRIPLEAF_TILT, Rule.SNOW_MELT, Rule.FARMLAND_DRY,
+            Rule.ICE_MELT, Rule.LEAF_DECAY, Rule.GROUND_FADE, Rule.CORAL_FADE, Rule.PLANT_SPREAD,
+            Rule.MUSHROOM_GROWTH, Rule.STEM_GROWTH, Rule.CROP_GROWTH, Rule.AMETHYST_GROWTH,
+            Rule.VERTICAL_PLANT_GROWTH, Rule.VINE_GROWTH, Rule.DRIPSTONE_GROWTH
+        );
         YamlConfiguration migrated = YamlConfiguration.loadConfiguration(destination.toFile());
         assertEquals(expected.size(), result.importedRules());
         assertTrue(result.unsupportedTriggers().isEmpty());
-        assertEquals(expected.stream().map(Rule::key).collect(Collectors.toSet()), migrated.getKeys(false));
-        for (Rule rule : expected) assertFalse(migrated.getBoolean(rule.key()), rule.key());
+        Set<String> expectedTopLevel = expected.stream().filter(rule -> !materialMapped.contains(rule))
+            .map(Rule::key).collect(Collectors.toSet());
+        expectedTopLevel.add("material-overrides");
+        assertEquals(expectedTopLevel, migrated.getKeys(false));
+        for (Rule rule : expected) {
+            if (!materialMapped.contains(rule)) assertFalse(migrated.getBoolean(rule.key()), rule.key());
+        }
+        assertFalse(migrated.getBoolean("material-overrides.gravity.GRAVEL"));
+        assertFalse(migrated.getBoolean("material-overrides.crop-growth.WHEAT"));
+        assertFalse(migrated.getBoolean("material-overrides.block-updates.LADDER"));
     }
 
     @Test

@@ -63,6 +63,7 @@ final class ResourceTest {
     void defaultRulesCoverEveryPhysicsRule() {
         Map<String, Object> defaults = yaml("default-rules.yml");
         Set<String> expected = Arrays.stream(Rule.values()).map(Rule::key).collect(Collectors.toSet());
+        assertEquals(Map.of(), defaults.remove("material-overrides"));
         assertEquals(expected, defaults.keySet());
         assertFalse((Boolean) defaults.get("block-hit-projectile-removal"));
         assertTrue(defaults.entrySet().stream()

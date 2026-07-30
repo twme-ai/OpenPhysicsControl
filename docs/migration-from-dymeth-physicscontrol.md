@@ -13,7 +13,7 @@ The legacy source is never moved, edited, or deleted. Existing OpenPhysicsContro
 
 ## Rule mapping
 
-The old plugin exposed material- and actor-specific switches while OpenPhysicsControl groups shared Bukkit event surfaces into broader rules. Every supported legacy `false` is therefore preserved: when several old switches feed one new rule, a single `false` makes the new rule `false`. This can stop a wider set of actions than the old narrow switch, but it never re-enables a behavior the old configuration had stopped.
+The old plugin exposed material- and actor-specific switches while OpenPhysicsControl groups shared Bukkit event surfaces into broader rules. Legacy triggers with an exact current `Material` mapping now import into `material-overrides`, preserving mixed states such as sand enabled while gravel is stopped. For the remaining aggregated surfaces, every supported legacy `false` is preserved: when several old switches feed one new rule, a single `false` makes the new rule `false`. That conservative fallback can stop a wider set of actions, but it never re-enables a behavior the old configuration had stopped.
 
 | OpenPhysicsControl rule | Imported legacy triggers |
 |---|---|
@@ -27,11 +27,11 @@ The old plugin exposed material- and actor-specific switches while OpenPhysicsCo
 | `block-hit-projectile-removal` | `BLOCK_HIT_PROJECTILES_REMOVING`; applies to arrows and tridents and remains `false` by default, as in the old plugin |
 | `tnt-prime` | Burning arrows activating TNT |
 | `farmland-trample`, `turtle-egg-trample`, `dripleaf-tilt`, `dragon-egg-teleport`, `frosted-ice` | Corresponding legacy physical-interaction triggers |
-| `block-updates` | Ladders, signs, rails, torches, redstone torches, soul torches, and saplings losing support |
-| `gravity` | Gravel, sand, anvils, dragon eggs, concrete powder, scaffolding, and pointed dripstone falling |
+| `block-updates` | Ladders, signs, rails, torches, redstone torches, soul torches, and saplings losing support; imported as matching material overrides |
+| `gravity` | Gravel, sand, anvils, dragon eggs, concrete powder, scaffolding, and pointed dripstone falling; imported as matching material overrides |
 | `water-flow`, `lava-flow` | Water and lava flowing |
 | `fire-spread`, `snow-melt`, `farmland-dry`, `ice-melt`, `leaf-decay`, `coral-fade`, `ground-fade`, `sculk-spread` | Corresponding natural world-change triggers |
-| `plant-spread`, `mushroom-growth`, `stem-growth`, `crop-growth`, `amethyst-growth` | Grass/mycelium, mushrooms, melons/pumpkins, crop, and amethyst triggers |
-| `vertical-plant-growth`, `tree-growth`, `vine-growth`, `dripstone-growth` | Cane/cactus/chorus/kelp/bamboo, trees, vine variants/glow berries, and pointed dripstone triggers |
+| `plant-spread`, `mushroom-growth`, `stem-growth`, `crop-growth`, `amethyst-growth` | Grass/mycelium, mushrooms, melons/pumpkins, crop, and amethyst triggers; exact material triggers use material overrides |
+| `vertical-plant-growth`, `tree-growth`, `vine-growth`, `dripstone-growth` | Cane/cactus/chorus/kelp/bamboo, trees, vine variants/glow berries, and pointed dripstone triggers; all except broad tree growth use material overrides |
 
 Legacy internal settings `DEBUG_MESSAGES`, `ALLOW_UNRECOGNIZED_ACTIONS`, and `IGNORED_STATE` are intentionally reported rather than imported.

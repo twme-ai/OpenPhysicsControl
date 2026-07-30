@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.7.0 - 2026-07-30
+
+- Added exact per-world `Material` overrides while preserving every existing one-click rule value and default-rule inheritance.
+- Added `/pc material <rule> <material> <on|off|toggle|clear> [world]`, configuration validation, and localized GUI override counts.
+- Applied material overrides to portable block event surfaces, with dedicated partial protection for explosion block lists and whole-action cancellation for piston moves.
+
 ## 2.6.0 - 2026-07-23
 
 - Added independent controls for standard/trial spawner output, entity explosion priming, oxygen depletion, fire/heat damage, freezing damage, and vehicle-to-entity collision.

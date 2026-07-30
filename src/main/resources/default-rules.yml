@@ -92,3 +92,12 @@ campfire-cooking: true
 crafter: true
 bell-ring: true
 note-blocks: true
+
+# Exact per-block overrides. A world-specific material-overrides section takes precedence.
+# The value here is used only when a rule reaches this material; it overrides the rule's value above.
+# Example:
+# material-overrides:
+#   gravity:
+#     SAND: true
+#     GRAVEL: false
+material-overrides: {}
