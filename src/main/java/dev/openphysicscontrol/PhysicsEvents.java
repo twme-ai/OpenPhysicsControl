@@ -32,6 +32,7 @@ import org.bukkit.event.block.BlockIgniteEvent;
 import org.bukkit.event.block.BlockPhysicsEvent;
 import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockReceiveGameEvent;
 import org.bukkit.event.block.BlockRedstoneEvent;
 import org.bukkit.event.block.BlockSpreadEvent;
@@ -88,14 +89,17 @@ import org.bukkit.event.world.TimeSkipEvent;
 import org.bukkit.event.vehicle.VehicleEntityCollisionEvent;
 import org.bukkit.event.vehicle.VehicleEnterEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.List;
 
 public final class PhysicsEvents implements Listener {
     private final RuleStore rules;
+    private final BlockTaskScheduler scheduler;
 
-    public PhysicsEvents(RuleStore rules) {
+    public PhysicsEvents(JavaPlugin plugin, RuleStore rules) {
         this.rules = rules;
+        this.scheduler = new BlockTaskScheduler(plugin);
     }
 
     private void control(Cancellable event, World world, Rule rule) {
@@ -144,6 +148,20 @@ public final class PhysicsEvents implements Listener {
         Rule rule = material.hasGravity() || event.getChangedType().hasGravity()
             ? Rule.GRAVITY : Rule.BLOCK_UPDATES;
         control(event, event.getBlock(), rule);
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+    public void placedBlockConnections(BlockPlaceEvent event) {
+        Block block = event.getBlockPlaced();
+        if (!PlacementConnections.supports(block.getType())
+            || !disabled(block.getWorld(), Rule.PLACED_BLOCK_CONNECTIONS, block.getType())) return;
+
+        Material placedType = block.getType();
+        this.scheduler.nextTick(block.getLocation(), () -> {
+            if (block.getType() != placedType) return;
+            var data = block.getBlockData();
+            if (PlacementConnections.disconnect(placedType, data)) block.setBlockData(data, false);
+        });
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)

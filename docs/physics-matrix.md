@@ -2,7 +2,7 @@
 
 This audit defines "physics" as autonomous world simulation, physical entity effects, and block-machine processing that can be controlled through Bukkit event surfaces. Most rows use portable Bukkit events; hanging mangrove propagules use a narrowly scoped post-change rollback gated by the verified server random-tick call origin. The inventory was derived from the Paper 26.2 and Spigot 26.2 API event classes under `block`, `world`, `weather`, relevant `entity`, and `inventory` packages.
 
-It intentionally excludes direct block break/place, inventory item movement, commands and custom plugin mutations, client-side collision prediction, chunk generation, and mob AI movement for which Spigot has no portable cancellable event. Broad, opt-in-configurable player block/entity interaction surfaces cover the reference scenario list without duplicating one rule per block. All rules are enabled by default; the legacy-compatible block-hit arrow/trident cleanup is intentionally disabled by default.
+It intentionally excludes block break and general placement protection, inventory item movement, commands and custom plugin mutations, client-side collision prediction, chunk generation, and mob AI movement for which Spigot has no portable cancellable event. Placement-time structural connections are the narrow placement exception. Broad, opt-in-configurable player block/entity interaction surfaces cover the reference scenario list without duplicating one rule per block. All rules are enabled by default; the legacy-compatible block-hit arrow/trident cleanup is intentionally disabled by default.
 
 Evidence codes:
 
@@ -24,6 +24,7 @@ Two event surfaces have dedicated behavior. `explosion-block-damage` evaluates e
 |---|---|---|---|
 | `gravity` | `BlockPhysicsEvent`, `EntityChangeBlockEvent` | All `Material.hasGravity()` blocks, including sand, gravel, anvils, concrete powder, dragon eggs, scaffolding, and pointed dripstone | MF |
 | `block-updates` | `BlockPhysicsEvent` | Neighbor updates and support-dependent block detachment not handled by gravity | MF |
+| `placed-block-connections` | `BlockPlaceEvent` plus a no-physics block-data update | Initial connections on the newly placed fence, glass pane/iron bars, wall, stairs, fence gate, or chest. Use with `block-updates` to independently control the existing neighbor and the newly placed block. | MF, UT |
 | `water-flow` | `BlockFromToEvent`, `FluidLevelChangeEvent` | Water and bubble-column flow/level changes | MF, UT |
 | `lava-flow` | `BlockFromToEvent`, `FluidLevelChangeEvent` | Lava flow and level changes | MF, UT |
 | `fluid-reactions` | `BlockFormEvent` | Stone, cobblestone, obsidian, and basalt created by liquids | MF, UT |
@@ -140,7 +141,7 @@ The following surfaces were inspected but are not presented as world-physics rul
 
 | Domain | Examples | Reason |
 |---|---|---|
-| Remaining direct player protection | `BlockBreakEvent`, `BlockPlaceEvent`, inventory item movement, bucket use | Broad right-click and entity-use controls are included for scenario coverage; ownership, breaking, placement, and inventory contents remain protection-plugin scope. |
+| Remaining direct player protection | `BlockBreakEvent`, general `BlockPlaceEvent` cancellation, inventory item movement, bucket use | Broad right-click/entity-use controls and the narrow placement-connection rule are included for scenario coverage; ownership, breaking, placement permission, and inventory contents remain protection-plugin scope. |
 | Client movement solver | acceleration, friction, jumping, sprinting, climbing, swimming, elytra, collision boxes | Mostly predicted by the client and has no complete portable Spigot event surface. Mineflayer's `prismarine-physics` models it for bots but cannot turn it into a server rule. |
 | Mob AI movement | pathfinding, goals, navigation, looking, jumping | Paper exposes some move callbacks, but Spigot does not and per-tick cancellation would be unsuitable for Folia. |
 | Generic combat/effects | attacks, potions, poison, magic, armor, death, resurrection | Gameplay/combat scope. Only environmental fall, drowning, fire/heat, freezing, and knockback controls are included. |

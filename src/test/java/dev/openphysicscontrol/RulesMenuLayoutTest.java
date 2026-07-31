@@ -23,6 +23,8 @@ final class RulesMenuLayoutTest {
         assertEquals(List.of(2, 3, 4, 5, 6, 11, 12, 13, 14, 15), RulesMenu.centeredSlots(10, 0));
         assertEquals(List.of(1, 2, 3, 5, 6, 7, 11, 12, 13, 14, 15),
             RulesMenu.centeredSlots(11, 0));
+        assertEquals(List.of(1, 2, 3, 5, 6, 7, 10, 11, 12, 14, 15, 16),
+            RulesMenu.centeredSlots(12, 0));
         assertEquals(IntStream.range(0, 9).boxed().toList(), RulesMenu.centeredSlots(9, 0));
     }
 

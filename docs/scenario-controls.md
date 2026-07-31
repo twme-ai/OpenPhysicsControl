@@ -11,6 +11,7 @@ OpenPhysicsControl uses broad, composable behavior rules instead of copying ever
 | `hanging-entity-detachment` | `HangingBreakEvent` | Item frames, glow item frames, and paintings removed by lost support, obstruction, explosions, or entities. |
 | `block-origin-explosions` | `BlockExplodeEvent` | Bed and respawn-anchor block explosions. Disabling the corresponding block interaction is the stronger pre-explosion control for player use. |
 | `sniffer-egg-hatch` | `BlockGrowEvent`, `BlockFadeEvent` | Both sniffer-egg cracking stages and final hatching under one rule. |
+| `placed-block-connections` | `BlockPlaceEvent` followed by a no-physics block-data update | Initial connections on newly placed fences, panes/bars, walls, stairs, fence gates, and chests. `block-updates` separately controls whether existing neighboring blocks react. |
 
 Existing dedicated rules still run first. For example, End portal frame filling and glow berry picking retain their own switches before the broad player-block rule is evaluated. Redstone and machine processing remain separate from whether a player may interact with the block.
 
@@ -31,3 +32,14 @@ material-overrides:
 ```
 
 The broad entity and hanging rules are world-level in this experiment. Entity-type overrides are a possible later extension, but are not implied by the existing material override format.
+
+To keep both sides of a newly placed fence disconnected while leaving this behavior enabled for other materials:
+
+```yaml
+block-updates: false
+placed-block-connections: true
+
+material-overrides:
+  placed-block-connections:
+    OAK_FENCE: false
+```

@@ -31,7 +31,7 @@ public final class OpenPhysicsControlPlugin extends JavaPlugin implements Listen
         this.rules = new RuleStore(this);
         this.rules.reload();
         this.getServer().getPluginManager().registerEvents(this, this);
-        this.getServer().getPluginManager().registerEvents(new PhysicsEvents(this.rules), this);
+        this.getServer().getPluginManager().registerEvents(new PhysicsEvents(this, this.rules), this);
         DynamicEntityListeners.register(this, this.rules);
     }
 

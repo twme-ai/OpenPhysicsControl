@@ -5,6 +5,7 @@
 # Blocks and signals
 gravity: true
 block-updates: true
+placed-block-connections: true
 water-flow: true
 lava-flow: true
 fluid-reactions: true

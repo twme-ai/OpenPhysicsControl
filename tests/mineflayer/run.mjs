@@ -96,6 +96,17 @@ async function expectNotBlock (position, unexpected, message) {
   assert.notEqual(actual.name, unexpected, `${message}: still ${unexpected}`)
 }
 
+async function expectServerBlockState (position, expected, message) {
+  const marker = `opc-block-state-${Date.now()}`
+  const response = nextChatMessage(new RegExp(marker), 2000)
+  command(`execute if block ${position.join(' ')} minecraft:${expected} run tellraw PhysicsBot {"text":"${marker}"}`)
+  try {
+    await response
+  } catch {
+    throw new Error(`${message}: expected minecraft:${expected} at ${position.join(',')}`)
+  }
+}
+
 async function resetArea () {
   await commands(
     'execute in minecraft:overworld run fill -8 100 -8 30 116 8 air',
@@ -262,7 +273,7 @@ async function testLocalizedMenu () {
       slot: 11,
       title: /建造與訊號/,
       size: 27,
-      rules: [1, 2, 3, 5, 6, 7, 11, 12, 13, 14, 15]
+      rules: [1, 2, 3, 5, 6, 7, 10, 11, 12, 14, 15, 16]
     },
     {
       slot: 12,
@@ -371,6 +382,55 @@ async function testMaterialOverrides () {
   await expectBlock([4, 105, 0], 'gravel', 'cleared gravity gravel override')
   await commands('opc material gravity sand clear world', 'setblock 3 105 0 air', 'setblock 4 105 0 air')
   console.log('PASS per-material overrides')
+}
+
+async function testPlacedBlockConnections () {
+  const existing = [7, 100, 0]
+  const placed = [8, 100, 0]
+  await commands(
+    'opc set block-updates off world',
+    'opc set placed-block-connections on world',
+    'opc material placed-block-connections oak_fence off world',
+    `setblock ${existing.join(' ')} minecraft:oak_fence[east=false]`,
+    `setblock ${placed.join(' ')} air`,
+    'tp PhysicsBot 8 100 2',
+    'clear PhysicsBot',
+    'give PhysicsBot minecraft:oak_fence 2'
+  )
+  let fence = bot.inventory.items().find(item => item.name === 'oak_fence')
+  assert.ok(fence, 'oak fence was not given to the bot')
+  await bot.equip(fence, 'hand')
+  await bot.activateBlock(await block(placed[0], placed[1] - 1, placed[2]), new Vec3(0, 1, 0))
+  await delay(500)
+  await expectServerBlockState(placed, 'oak_fence[west=false]',
+    'placed connection off: new fence connected to its neighbor')
+  await expectServerBlockState(existing, 'oak_fence[east=false]',
+    'block updates off: existing fence updated toward the new fence')
+
+  await commands(
+    `setblock ${placed.join(' ')} air`,
+    'opc material placed-block-connections oak_fence on world',
+    'give PhysicsBot minecraft:oak_fence 1'
+  )
+  fence = bot.inventory.items().find(item => item.name === 'oak_fence')
+  assert.ok(fence, 'second oak fence was not given to the bot')
+  await bot.equip(fence, 'hand')
+  await bot.activateBlock(await block(placed[0], placed[1] - 1, placed[2]), new Vec3(0, 1, 0))
+  await delay(500)
+  await expectServerBlockState(placed, 'oak_fence[west=true]',
+    'placed connection on: new fence did not connect to its neighbor')
+  await expectServerBlockState(existing, 'oak_fence[east=false]',
+    'block updates off: existing fence unexpectedly connected')
+
+  await commands(
+    'opc material placed-block-connections oak_fence clear world',
+    'opc set block-updates on world',
+    `setblock ${existing.join(' ')} air`,
+    `setblock ${placed.join(' ')} air`,
+    'tp PhysicsBot 0 100 0',
+    'clear PhysicsBot'
+  )
+  console.log('PASS newly placed block connections and material override')
 }
 
 async function testPlayerBlockInteractions () {
@@ -697,6 +757,7 @@ async function equipEnderEye () {
 async function testEndPortalFrameFilling () {
   const position = [2, 101, 0]
   await commands(
+    'tp PhysicsBot 2 100 2',
     'opc set end-portal-frame-filling off world',
     'setblock 2 101 0 minecraft:end_portal_frame[facing=north,eye=false]'
   )
@@ -715,7 +776,7 @@ async function testEndPortalFrameFilling () {
   await delay(500)
   assert.equal(String((await block(...position)).getProperties().eye), 'true',
     'end portal frame filling on: Eye of Ender was not inserted')
-  await commands('clear PhysicsBot minecraft:ender_eye', 'setblock 2 101 0 air')
+  await commands('clear PhysicsBot minecraft:ender_eye', 'setblock 2 101 0 air', 'tp PhysicsBot 0 100 0')
   console.log('PASS end-portal-frame-filling')
 }
 
@@ -978,6 +1039,7 @@ async function start () {
   await testLocalizedMenu()
   await testGravity()
   await testMaterialOverrides()
+  await testPlacedBlockConnections()
   await testPlayerBlockInteractions()
   await testPlayerEntityInteractions()
   await testHangingEntityDetachment()

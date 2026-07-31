@@ -7,6 +7,8 @@
 - Added hanging entity detachment controls for item frames and paintings.
 - Added block-origin explosion controls for beds and respawn anchors.
 - Added a dedicated sniffer egg rule covering cracking and final hatching.
+- Added independent control of initial connections on newly placed fences, panes/bars, walls, stairs, fence gates, and chests.
+- Kept placement-time connections separate from neighbor `block-updates`, with per-material overrides for both sides of a placement.
 - Added a GitHub Actions workflow that tests both Spigot and Paper API profiles and uploads the shaded JAR.
 
 ## 2.7.0 - 2026-07-30
