@@ -2,7 +2,7 @@
 
 This audit defines "physics" as autonomous world simulation, physical entity effects, and block-machine processing that can be controlled through Bukkit event surfaces. Most rows use portable Bukkit events; hanging mangrove propagules use a narrowly scoped post-change rollback gated by the verified server random-tick call origin. The inventory was derived from the Paper 26.2 and Spigot 26.2 API event classes under `block`, `world`, `weather`, relevant `entity`, and `inventory` packages.
 
-It intentionally excludes direct block break/place and inventory actions (protection-plugin scope), commands and custom plugin mutations, client-side collision prediction, chunk generation, and mob AI movement for which Spigot has no portable cancellable event. All simulation rules are enabled by default; the legacy-compatible block-hit arrow/trident cleanup is intentionally disabled by default.
+It intentionally excludes direct block break/place, inventory item movement, commands and custom plugin mutations, client-side collision prediction, chunk generation, and mob AI movement for which Spigot has no portable cancellable event. This development fork includes broad, opt-in-configurable player block/entity interaction surfaces to cover the reference scenario list without duplicating one rule per block. All rules are enabled by default; the legacy-compatible block-hit arrow/trident cleanup is intentionally disabled by default.
 
 Evidence codes:
 
@@ -37,6 +37,7 @@ Two event surfaces have dedicated behavior. `explosion-block-damage` evaluates e
 | `tnt-prime` | `TNTPrimeEvent` | TNT priming by redstone, fire, projectiles, and explosions | MF |
 | `explosion-block-damage` | `EntityExplodeEvent`, `BlockExplodeEvent` | Clears affected block lists while preserving entity damage and sound | MF |
 | `entity-explosion-prime` | `ExplosionPrimeEvent` | Entity-origin explosion priming, including TNT entities, creepers, end crystals, wind charges, and firework explosions; beds and respawn anchors remain block-origin explosions | MF |
+| `block-origin-explosions` | explosive-use `PlayerInteractEvent`, `BlockExplodeEvent` fallback | Bed and respawn-anchor explosions; player use is cancelled before block removal, while the block event protects remaining non-player paths | MF |
 
 ## Fire, climate, and time
 
@@ -77,6 +78,7 @@ Two event surfaces have dedicated behavior. `explosion-block-damage` evaluates e
 | `dripstone-growth` | `BlockGrowEvent`, `BlockSpreadEvent` | Pointed dripstone growth | UT |
 | `turtle-egg-hatch` | `BlockGrowEvent` | Turtle egg cracking and hatching | UT |
 | `frogspawn-hatch` | `BlockFadeEvent` | Frogspawn hatching/removal | UT |
+| `sniffer-egg-hatch` | `BlockGrowEvent`, `BlockFadeEvent` | Sniffer egg cracking stages and final hatching | UT |
 | `bone-meal` | `BlockFertilizeEvent`, bonemeal `StructureGrowEvent` | Player and dispenser fertilization, including mangrove propagules | API |
 
 ## Entities and players
@@ -90,6 +92,8 @@ Two event surfaces have dedicated behavior. `explosion-block-damage` evaluates e
 | `dripleaf-tilt` | Same physical interaction events | Big dripleaf tilt caused by entities | UT |
 | `end-portal-frame-filling` | `PlayerInteractEvent`, `EntityChangeBlockEvent` | Placing an Eye of Ender into an End portal frame | MF |
 | `glow-berry-picking` | `PlayerInteractEvent`, `EntityChangeBlockEvent` | Harvesting ripe glow berries from cave vines | MF |
+| `player-block-interactions` | right-click `PlayerInteractEvent` | Direct use of clicked blocks, with per-material overrides; dedicated frame-filling and berry-picking rules are evaluated first | MF |
+| `player-entity-interactions` | `PlayerInteractEntityEvent`, `PlayerArmorStandManipulateEvent`, player `VehicleEnterEvent` | Direct entity use, armor stand manipulation, and mounting boats or minecarts | MF |
 | `natural-mob-spawning` | `CreatureSpawnEvent` with `NATURAL` reason | Natural mob spawning only; commands, spawners, breeding, buckets, and plugins remain allowed | API |
 | `spawner-mob-spawning` | `SpawnerSpawnEvent`, `TrialSpawnerSpawnEvent`, `CreatureSpawnEvent` with `SPAWNER`/`TRIAL_SPAWNER` reasons | Standard and trial spawner output; natural, command, breeding, bucket, and plugin spawns remain allowed | MF, UT, API |
 | `mob-breeding` | `EntityEnterLoveModeEvent`, `EntityBreedEvent` | Entry into love mode and animal breeding completion | API |
@@ -97,6 +101,7 @@ Two event surfaces have dedicated behavior. `explosion-block-damage` evaluates e
 | `beehive-entry` | `EntityEnterBlockEvent` | Bees entering nests and hives | API |
 | `item-despawn` | `ItemDespawnEvent` | Dropped item expiry | API |
 | `item-merge` | `ItemMergeEvent` | Nearby dropped-item stack merging | API |
+| `hanging-entity-detachment` | `HangingBreakEvent` | Item frame, glow item frame, and painting removal after support loss, obstruction, explosions, or entity removal | MF |
 | `projectile-launch` | `ProjectileLaunchEvent` | Arrows, tridents, potions, pearls, fireworks, and other projectile launches | API |
 | `block-hit-projectile-removal` | `ProjectileHitEvent` | Removes arrows and tridents after they hit a block when enabled; disabled by default to preserve vanilla persistence | MF |
 | `entity-combust` | `EntityCombustEvent` and subclasses | Entity ignition by sun, blocks, and entities | API |
@@ -135,11 +140,11 @@ The following surfaces were inspected but are not presented as world-physics rul
 
 | Domain | Examples | Reason |
 |---|---|---|
-| Direct player protection | `BlockBreakEvent`, `BlockPlaceEvent`, inventory clicks, bucket use | Belongs to a protection plugin; blocking it would change ownership/security semantics rather than simulation. |
+| Remaining direct player protection | `BlockBreakEvent`, `BlockPlaceEvent`, inventory item movement, bucket use | Broad right-click and entity-use controls are included for scenario coverage; ownership, breaking, placement, and inventory contents remain protection-plugin scope. |
 | Client movement solver | acceleration, friction, jumping, sprinting, climbing, swimming, elytra, collision boxes | Mostly predicted by the client and has no complete portable Spigot event surface. Mineflayer's `prismarine-physics` models it for bots but cannot turn it into a server rule. |
 | Mob AI movement | pathfinding, goals, navigation, looking, jumping | Paper exposes some move callbacks, but Spigot does not and per-tick cancellation would be unsuitable for Folia. |
 | Generic combat/effects | attacks, potions, poison, magic, armor, death, resurrection | Gameplay/combat scope. Only environmental fall, drowning, fire/heat, freezing, and knockback controls are included. |
-| Explicit travel and posture | player teleport, portal entry, mounting, swimming/gliding toggles | Direct entity/player action rather than autonomous world simulation; portal *creation* remains covered. |
+| Explicit travel and posture | player teleport, portal entry, swimming/gliding toggles | Direct entity/player action rather than autonomous world simulation; vehicle mounting and portal *creation* are covered separately. |
 | Chunk generation and data packs | terrain noise, carvers, structures generated with chunks | Occurs during generation rather than runtime physics and cannot be reversed safely by an event cancellation plugin. |
 | Paper-only mechanics | `EntityMoveEvent`, `EntityInsideBlockEvent`, compost and dragon-egg Paper events | Excluded from the shared core where no equivalent Spigot 26.2 event exists. Portable Bukkit fallbacks are used when available. |
 | Pure presentation | sounds, particles, block display state, maps, signs | No physical state transition. Bell and note-block activation are included because they are redstone-driven machine outputs. |

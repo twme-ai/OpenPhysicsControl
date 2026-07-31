@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.8.0-SNAPSHOT
+
+- Added broad player block interaction controls with per-material overrides.
+- Added player entity interaction and vehicle-entry controls.
+- Added hanging entity detachment controls for item frames and paintings.
+- Added block-origin explosion controls for beds and respawn anchors.
+- Added a dedicated sniffer egg rule covering cracking and final hatching.
+- Added a GitHub Actions workflow that tests both Spigot and Paper API profiles and uploads the shaded JAR.
+
 ## 2.7.0 - 2026-07-30
 
 - Added exact per-world `Material` overrides while preserving every existing one-click rule value and default-rule inheritance.

@@ -43,6 +43,7 @@ final class PhysicsClassifier {
     static Rule fade(Material from, Material to) {
         String oldName = from.name();
         String newName = to.name();
+        if (oldName.equals("SNIFFER_EGG")) return Rule.SNIFFER_EGG_HATCH;
         if (oldName.equals("FIRE") || oldName.equals("SOUL_FIRE")) return Rule.FIRE_EXTINGUISH;
         if (oldName.equals("ICE") || oldName.equals("PACKED_ICE") || oldName.equals("BLUE_ICE")) return Rule.ICE_MELT;
         if (oldName.equals("FROSTED_ICE")) return Rule.FROSTED_ICE;
@@ -58,6 +59,7 @@ final class PhysicsClassifier {
     static Rule grow(Material from, Material to) {
         String oldName = from.name();
         String newName = to.name();
+        if (oldName.equals("SNIFFER_EGG") || newName.equals("SNIFFER_EGG")) return Rule.SNIFFER_EGG_HATCH;
         if (oldName.equals("TURTLE_EGG") || newName.equals("TURTLE_EGG")) return Rule.TURTLE_EGG_HATCH;
         if (oldName.equals("MANGROVE_PROPAGULE") || newName.equals("MANGROVE_PROPAGULE")) return Rule.TREE_GROWTH;
         if (isAmethyst(oldName) || isAmethyst(newName)) return Rule.AMETHYST_GROWTH;

@@ -1,5 +1,9 @@
 # OpenPhysicsControl
 
+[![Build](https://github.com/twme-ai/OpenPhysicsControl-Scenarios/actions/workflows/build.yml/badge.svg)](https://github.com/twme-ai/OpenPhysicsControl-Scenarios/actions/workflows/build.yml)
+
+> 這是追蹤 [`twme-ai/OpenPhysicsControl`](https://github.com/twme-ai/OpenPhysicsControl) 完整 Git 歷史的情境控制 development fork。由於 GitHub 不允許帳號 fork 自己擁有的 repository，它以獨立 repository 發布，`upstream` 仍指向原專案。
+
 OpenPhysicsControl 是從零撰寫、採 MIT 授權的 Bukkit 世界物理控制插件。它不編譯、打包或引用 Dymeth/PhysicsControl 的原始碼；該專案僅作為資料遷移相容目標與選單資訊架構參考。
 
 ## 平台
@@ -11,7 +15,7 @@ OpenPhysicsControl 是從零撰寫、採 MIT 授權的 Bukkit 世界物理控制
 
 ## 功能
 
-80 項規則可按世界獨立控制，涵蓋方塊與流體、火焰與氣候、植物生長、實體物理、紅石以及自動化方塊。新增的實體控制可停止標準與試煉生怪器、實體爆炸引爆、氧氣消耗、火焰/高溫傷害、凍傷及載具與實體碰撞。預設值位於 `plugins/OpenPhysicsControl/default-rules.yml`，各世界狀態儲存在 `plugins/OpenPhysicsControl/worlds/<世界名稱>.yml`。完整事件來源及測試狀態見 [`docs/physics-matrix.md`](docs/physics-matrix.md)。
+85 項規則可按世界獨立控制，涵蓋方塊與流體、火焰與氣候、植物生長、實體物理、玩家互動、紅石以及自動化方塊。實驗性情境控制可停止玩家右鍵方塊、玩家操作或乘坐實體、展示框與畫脫落、床與重生錨的方塊來源爆炸，並以單一規則控制嗅探獸蛋完整孵化。預設值位於 `plugins/OpenPhysicsControl/default-rules.yml`，各世界狀態儲存在 `plugins/OpenPhysicsControl/worlds/<世界名稱>.yml`。設計與設定範例見 [`docs/scenario-controls.md`](docs/scenario-controls.md)，完整事件來源及測試狀態見 [`docs/physics-matrix.md`](docs/physics-matrix.md)。
 
 `/opc` 開啟三列固定位置的物理分類選單，選擇分類後才會顯示該組規則；分類布局延續舊版熟悉的互動、建造、重力與流體、世界、生長區域，並加入機械分類。亦可使用 `/openphysics`、`/ophysics` 或 `/pc`。其他指令：
 
@@ -49,6 +53,12 @@ material-overrides:
 ```
 
 上述範例會停止所有掉落方塊，僅保留沙與紅沙；停止小麥生長但保留其他作物；停止爆炸破壞方塊但仍允許破壞白色羊毛。一般方塊事件會以變化前的方塊為準。活塞則檢查所有被移動的方塊，任何被停止的材質都會取消整次推動；爆炸則逐一從受影響清單保護被停止的材質。天氣、生怪、氧氣與純實體事件沒有方塊主體，仍只採用規則的一鍵基準值。
+
+`player-block-interactions` 也支援方塊材質覆寫，因此可以維持整體玩家互動開啟，只針對 `RESPAWN_ANCHOR`、床、鐵砧、雕紋書櫃等指定方塊停止右鍵操作。`player-entity-interactions` 與 `hanging-entity-detachment` 目前採世界層級開關，不套用方塊材質覆寫。
+
+## GitHub Actions
+
+`.github/workflows/build.yml` 會在 push、pull request 與手動觸發時使用 Java 25，先驗證 Spigot 26.2 profile，再建立 Paper 26.2 shaded JAR，並將 `OpenPhysicsControl.jar` 上傳為 workflow artifact。
 
 ## 從 Dymeth PhysicsControl 遷移
 

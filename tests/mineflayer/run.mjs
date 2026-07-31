@@ -102,7 +102,10 @@ async function resetArea () {
     'execute in minecraft:overworld run fill -8 99 -8 30 99 8 stone',
     'execute in minecraft:overworld run kill @e[type=minecraft:tnt]',
     'execute in minecraft:overworld run kill @e[type=minecraft:arrow]',
-    'execute in minecraft:overworld run kill @e[type=minecraft:armor_stand]'
+    'execute in minecraft:overworld run kill @e[type=minecraft:armor_stand]',
+    'execute in minecraft:overworld run kill @e[type=minecraft:item_frame]',
+    'execute in minecraft:overworld run kill @e[type=minecraft:minecart]',
+    'execute in minecraft:overworld run kill @e[type=minecraft:sniffer]'
   )
   await delay(500)
 }
@@ -247,19 +250,19 @@ async function testLocalizedMenu () {
       slot: 4,
       title: /玩家互動/,
       size: 18,
-      rules: [1, 2, 3, 4, 5, 6, 7]
+      rules: Array.from({ length: 9 }, (_, slot) => slot)
     },
     {
       slot: 5,
       title: /實體效果/,
       size: 27,
-      rules: [1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 14, 15, 16]
+      rules: [1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 16]
     },
     {
       slot: 11,
       title: /建造與訊號/,
       size: 27,
-      rules: [2, 3, 4, 5, 6, 11, 12, 13, 14, 15]
+      rules: [1, 2, 3, 5, 6, 7, 11, 12, 13, 14, 15]
     },
     {
       slot: 12,
@@ -276,8 +279,8 @@ async function testLocalizedMenu () {
     {
       slot: 14,
       title: /小型植物與生長/,
-      size: 18,
-      rules: Array.from({ length: 9 }, (_, slot) => slot)
+      size: 27,
+      rules: [2, 3, 4, 5, 6, 11, 12, 13, 14, 15]
     },
     {
       slot: 15,
@@ -368,6 +371,111 @@ async function testMaterialOverrides () {
   await expectBlock([4, 105, 0], 'gravel', 'cleared gravity gravel override')
   await commands('opc material gravity sand clear world', 'setblock 3 105 0 air', 'setblock 4 105 0 air')
   console.log('PASS per-material overrides')
+}
+
+async function testPlayerBlockInteractions () {
+  const position = [3, 101, 3]
+  await commands(
+    'opc set redstone on world',
+    'opc set player-block-interactions on world',
+    'opc material player-block-interactions lever off world',
+    'setblock 3 100 3 minecraft:stone',
+    'setblock 3 101 3 minecraft:lever[face=floor,facing=north,powered=false]'
+  )
+  await bot.activateBlock(await block(...position))
+  await delay(400)
+  assert.equal(String((await block(...position)).getProperties().powered), 'false',
+    'lever material interaction off: player toggled the lever')
+
+  await commands('opc material player-block-interactions lever on world')
+  await bot.activateBlock(await block(...position))
+  await delay(400)
+  assert.equal(String((await block(...position)).getProperties().powered), 'true',
+    'lever material interaction on: player could not toggle the lever')
+  await commands('opc material player-block-interactions lever clear world', 'setblock 3 101 3 air')
+  console.log('PASS player-block-interactions with material override')
+}
+
+async function testPlayerEntityInteractions () {
+  await commands(
+    'tp PhysicsBot 0 100 0',
+    'kill @e[type=minecraft:minecart]',
+    'summon minecraft:minecart 1 100 0',
+    'opc set player-entity-interactions off world'
+  )
+  await delay(500)
+  let minecart = nearbyEntities('minecart')[0]
+  assert.ok(minecart, 'test minecart was not visible to Mineflayer')
+  await bot.activateEntity(minecart)
+  await delay(500)
+  assert.equal(bot.vehicle ?? null, null, 'player entity interactions off: player mounted a minecart')
+
+  await commands('opc set player-entity-interactions on world')
+  minecart = nearbyEntities('minecart')[0]
+  await bot.activateEntity(minecart)
+  await delay(500)
+  assert.ok(bot.vehicle, 'player entity interactions on: player did not mount the minecart')
+  bot.dismount()
+  await delay(250)
+  await commands('kill @e[type=minecraft:minecart]')
+  console.log('PASS player-entity-interactions and vehicle entry')
+}
+
+async function testHangingEntityDetachment () {
+  async function unsupportedFrame () {
+    await commands(
+      'tp PhysicsBot 6 100 3',
+      'clear PhysicsBot minecraft:item_frame',
+      'give PhysicsBot minecraft:item_frame 1',
+      'setblock 6 102 0 minecraft:stone',
+    )
+    const frameItem = bot.inventory.items().find(item => item.name === 'item_frame')
+    assert.ok(frameItem, 'Mineflayer did not receive an item frame')
+    await bot.equip(frameItem, 'hand')
+    await bot.activateBlock(await block(6, 102, 0), new Vec3(0, 0, 1))
+    await delay(500)
+    assert.ok(nearbyEntities('item_frame').length > 0, 'test item frame was not created')
+    await commands('setblock 6 102 0 air')
+    // Hanging entities validate support every 100 server ticks.
+    await delay(6200)
+  }
+
+  await commands('kill @e[type=minecraft:item_frame]', 'opc set hanging-entity-detachment off world')
+  await unsupportedFrame()
+  assert.ok(nearbyEntities('item_frame').length > 0,
+    'hanging entity detachment off: unsupported item frame was removed')
+
+  await commands('opc set hanging-entity-detachment on world', 'kill @e[type=minecraft:item_frame]')
+  await unsupportedFrame()
+  assert.equal(nearbyEntities('item_frame').length, 0,
+    'hanging entity detachment on: unsupported item frame remained')
+  await commands('clear PhysicsBot minecraft:item_frame', 'tp PhysicsBot 0 100 0')
+  console.log('PASS hanging-entity-detachment')
+}
+
+async function testBlockOriginExplosions () {
+  const position = [3, 100, 3]
+  await commands(
+    'tp PhysicsBot 0 100 0',
+    'clear PhysicsBot',
+    'opc set player-block-interactions on world',
+    'opc set block-origin-explosions off world',
+    'setblock 3 100 3 minecraft:respawn_anchor[charges=1]'
+  )
+  await bot.unequip('hand')
+  await bot.activateBlock(await block(...position))
+  await delay(700)
+  await expectBlock(position, 'respawn_anchor', 'block-origin explosions off')
+
+  await commands(
+    'opc set block-origin-explosions on world',
+    'setblock 3 100 3 minecraft:respawn_anchor[charges=1]'
+  )
+  await bot.activateBlock(await block(...position))
+  await delay(700)
+  await expectBlock(position, 'air', 'block-origin explosions on')
+  await resetArea()
+  console.log('PASS block-origin-explosions')
 }
 
 async function testWaterFlow () {
@@ -870,6 +978,10 @@ async function start () {
   await testLocalizedMenu()
   await testGravity()
   await testMaterialOverrides()
+  await testPlayerBlockInteractions()
+  await testPlayerEntityInteractions()
+  await testHangingEntityDetachment()
+  await testBlockOriginExplosions()
   await testWaterFlow()
   await testLavaFlow()
   await testFluidReactions()

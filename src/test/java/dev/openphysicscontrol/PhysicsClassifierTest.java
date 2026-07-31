@@ -50,6 +50,7 @@ final class PhysicsClassifierTest {
         assertEquals(Rule.DRIPSTONE_GROWTH,
             PhysicsClassifier.grow(Material.POINTED_DRIPSTONE, Material.POINTED_DRIPSTONE));
         assertEquals(Rule.TURTLE_EGG_HATCH, PhysicsClassifier.grow(Material.TURTLE_EGG, Material.TURTLE_EGG));
+        assertEquals(Rule.SNIFFER_EGG_HATCH, PhysicsClassifier.grow(Material.SNIFFER_EGG, Material.SNIFFER_EGG));
 
         assertEquals(Rule.FIRE_SPREAD, PhysicsClassifier.spread(Material.FIRE, Material.FIRE));
         assertEquals(Rule.SCULK_SPREAD, PhysicsClassifier.spread(Material.SCULK_CATALYST, Material.SCULK));
@@ -59,6 +60,14 @@ final class PhysicsClassifierTest {
         assertEquals(Rule.MUSHROOM_GROWTH, PhysicsClassifier.structure(TreeType.RED_MUSHROOM));
         assertEquals(Rule.VERTICAL_PLANT_GROWTH, PhysicsClassifier.structure(TreeType.CHORUS_PLANT));
         assertEquals(Rule.TREE_GROWTH, PhysicsClassifier.structure(TreeType.TREE));
+    }
+
+    @Test
+    void routesSnifferEggCrackingAndFinalHatchToOneRule() {
+        assertEquals(Rule.SNIFFER_EGG_HATCH,
+            PhysicsClassifier.grow(Material.SNIFFER_EGG, Material.SNIFFER_EGG));
+        assertEquals(Rule.SNIFFER_EGG_HATCH,
+            PhysicsClassifier.fade(Material.SNIFFER_EGG, Material.AIR));
     }
 
     @Test

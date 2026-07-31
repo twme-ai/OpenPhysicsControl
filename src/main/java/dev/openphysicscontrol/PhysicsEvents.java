@@ -8,9 +8,11 @@ import org.bukkit.block.BlockState;
 import org.bukkit.block.data.type.CaveVinesPlant;
 import org.bukkit.block.data.type.EndPortalFrame;
 import org.bukkit.block.data.type.MangrovePropagule;
+import org.bukkit.block.data.type.RespawnAnchor;
 import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -67,12 +69,15 @@ import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.entity.SheepRegrowWoolEvent;
 import org.bukkit.event.entity.SpawnerSpawnEvent;
 import org.bukkit.event.entity.TrialSpawnerSpawnEvent;
+import org.bukkit.event.hanging.HangingBreakEvent;
 import org.bukkit.event.inventory.BrewEvent;
 import org.bukkit.event.inventory.BrewingStandFuelEvent;
 import org.bukkit.event.inventory.FurnaceBurnEvent;
 import org.bukkit.event.inventory.FurnaceSmeltEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.inventory.InventoryPickupItemEvent;
+import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.weather.LightningStrikeEvent;
 import org.bukkit.event.weather.ThunderChangeEvent;
@@ -81,6 +86,7 @@ import org.bukkit.event.world.PortalCreateEvent;
 import org.bukkit.event.world.StructureGrowEvent;
 import org.bukkit.event.world.TimeSkipEvent;
 import org.bukkit.event.vehicle.VehicleEntityCollisionEvent;
+import org.bukkit.event.vehicle.VehicleEnterEvent;
 import org.bukkit.inventory.Inventory;
 
 import java.util.List;
@@ -259,6 +265,10 @@ public final class PhysicsEvents implements Listener {
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void blockExplosion(BlockExplodeEvent event) {
+        if (disabled(event.getBlock().getWorld(), Rule.BLOCK_ORIGIN_EXPLOSIONS, event.getBlock().getType())) {
+            event.setCancelled(true);
+            return;
+        }
         controlExplosion(event.getBlock().getWorld(), event.blockList());
     }
 
@@ -274,8 +284,35 @@ public final class PhysicsEvents implements Listener {
         if (event.getAction() == Action.PHYSICAL) {
             control(event, clicked, PhysicsClassifier.physicalInteraction(clicked.getType()));
         } else if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+            if (isExplosiveBlockUse(event, clicked)) {
+                control(event, clicked, Rule.BLOCK_ORIGIN_EXPLOSIONS);
+                if (event.isCancelled()) return;
+            }
             control(event, clicked, rightClickRule(clicked.getType()));
+            if (!event.isCancelled()) control(event, clicked, Rule.PLAYER_BLOCK_INTERACTIONS);
         }
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+    public void playerEntityInteract(PlayerInteractEntityEvent event) {
+        control(event, event.getPlayer().getWorld(), Rule.PLAYER_ENTITY_INTERACTIONS);
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+    public void armorStandManipulate(PlayerArmorStandManipulateEvent event) {
+        control(event, event.getPlayer().getWorld(), Rule.PLAYER_ENTITY_INTERACTIONS);
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+    public void vehicleEnter(VehicleEnterEvent event) {
+        if (event.getEntered() instanceof Player) {
+            control(event, event.getVehicle().getWorld(), Rule.PLAYER_ENTITY_INTERACTIONS);
+        }
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+    public void hangingBreak(HangingBreakEvent event) {
+        control(event, event.getEntity().getWorld(), Rule.HANGING_ENTITY_DETACHMENT);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
@@ -593,5 +630,18 @@ public final class PhysicsEvents implements Listener {
             case CAVE_VINES, CAVE_VINES_PLANT -> Rule.GLOW_BERRY_PICKING;
             default -> null;
         };
+    }
+
+    private static boolean isExplosiveBlockUse(PlayerInteractEvent event, Block clicked) {
+        Material material = clicked.getType();
+        if (material == Material.RESPAWN_ANCHOR
+            && clicked.getWorld().getEnvironment() != World.Environment.NETHER
+            && clicked.getBlockData() instanceof RespawnAnchor anchor
+            && anchor.getCharges() > 0) {
+            Material item = event.getItem() == null ? Material.AIR : event.getItem().getType();
+            return item != Material.GLOWSTONE || anchor.getCharges() >= anchor.getMaximumCharges();
+        }
+        return material.name().endsWith("_BED")
+            && clicked.getWorld().getEnvironment() != World.Environment.NORMAL;
     }
 }
