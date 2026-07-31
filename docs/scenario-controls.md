@@ -1,6 +1,6 @@
 # Scenario-oriented controls
 
-This development fork uses broad, composable behavior rules instead of copying every row from the reference spreadsheet into a separate switch.
+OpenPhysicsControl uses broad, composable behavior rules instead of copying every row from the reference spreadsheet into a separate switch.
 
 ## Added control surfaces
 

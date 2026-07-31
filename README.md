@@ -1,8 +1,6 @@
 # OpenPhysicsControl
 
-[![Build](https://github.com/twme-ai/OpenPhysicsControl-Scenarios/actions/workflows/build.yml/badge.svg)](https://github.com/twme-ai/OpenPhysicsControl-Scenarios/actions/workflows/build.yml)
-
-> 這是追蹤 [`twme-ai/OpenPhysicsControl`](https://github.com/twme-ai/OpenPhysicsControl) 完整 Git 歷史的情境控制 development fork。由於 GitHub 不允許帳號 fork 自己擁有的 repository，它以獨立 repository 發布，`upstream` 仍指向原專案。
+[![Build](https://github.com/twme-ai/OpenPhysicsControl/actions/workflows/build.yml/badge.svg)](https://github.com/twme-ai/OpenPhysicsControl/actions/workflows/build.yml)
 
 OpenPhysicsControl 是從零撰寫、採 MIT 授權的 Bukkit 世界物理控制插件。它不編譯、打包或引用 Dymeth/PhysicsControl 的原始碼；該專案僅作為資料遷移相容目標與選單資訊架構參考。
 

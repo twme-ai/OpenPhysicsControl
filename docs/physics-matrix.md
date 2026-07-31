@@ -2,7 +2,7 @@
 
 This audit defines "physics" as autonomous world simulation, physical entity effects, and block-machine processing that can be controlled through Bukkit event surfaces. Most rows use portable Bukkit events; hanging mangrove propagules use a narrowly scoped post-change rollback gated by the verified server random-tick call origin. The inventory was derived from the Paper 26.2 and Spigot 26.2 API event classes under `block`, `world`, `weather`, relevant `entity`, and `inventory` packages.
 
-It intentionally excludes direct block break/place, inventory item movement, commands and custom plugin mutations, client-side collision prediction, chunk generation, and mob AI movement for which Spigot has no portable cancellable event. This development fork includes broad, opt-in-configurable player block/entity interaction surfaces to cover the reference scenario list without duplicating one rule per block. All rules are enabled by default; the legacy-compatible block-hit arrow/trident cleanup is intentionally disabled by default.
+It intentionally excludes direct block break/place, inventory item movement, commands and custom plugin mutations, client-side collision prediction, chunk generation, and mob AI movement for which Spigot has no portable cancellable event. Broad, opt-in-configurable player block/entity interaction surfaces cover the reference scenario list without duplicating one rule per block. All rules are enabled by default; the legacy-compatible block-hit arrow/trident cleanup is intentionally disabled by default.
 
 Evidence codes:
 
