@@ -64,7 +64,6 @@ farmland-trample: true
 turtle-egg-trample: true
 dripleaf-tilt: true
 end-portal-frame-filling: true
-glow-berry-picking: true
 player-block-interactions: true
 player-entity-interactions: true
 natural-mob-spawning: true

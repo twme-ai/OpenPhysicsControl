@@ -23,7 +23,6 @@ The old plugin exposed material- and actor-specific switches while OpenPhysicsCo
 | `fire-ignite` | Player flint usage |
 | `bone-meal` | `PLAYERS_BONE_MEAL_USAGE` and the older `BONE_MEAL_USAGE` name |
 | `end-portal-frame-filling` | `END_PORTAL_FRAMES_FILLING` |
-| `glow-berry-picking` | `GLOW_BERRIES_PICKING` |
 | `block-hit-projectile-removal` | `BLOCK_HIT_PROJECTILES_REMOVING`; applies to arrows and tridents and remains `false` by default, as in the old plugin |
 | `tnt-prime` | Burning arrows activating TNT |
 | `farmland-trample`, `turtle-egg-trample`, `dripleaf-tilt`, `dragon-egg-teleport`, `frosted-ice` | Corresponding legacy physical-interaction triggers |
@@ -34,4 +33,4 @@ The old plugin exposed material- and actor-specific switches while OpenPhysicsCo
 | `plant-spread`, `mushroom-growth`, `stem-growth`, `crop-growth`, `amethyst-growth` | Grass/mycelium, mushrooms, melons/pumpkins, crop, and amethyst triggers; exact material triggers use material overrides |
 | `vertical-plant-growth`, `tree-growth`, `vine-growth`, `dripstone-growth` | Cane/cactus/chorus/kelp/bamboo, trees, vine variants/glow berries, and pointed dripstone triggers; all except broad tree growth use material overrides |
 
-Legacy internal settings `DEBUG_MESSAGES`, `ALLOW_UNRECOGNIZED_ACTIONS`, and `IGNORED_STATE` are intentionally reported rather than imported.
+The removed `GLOW_BERRIES_PICKING` switch and legacy internal settings `DEBUG_MESSAGES`, `ALLOW_UNRECOGNIZED_ACTIONS`, and `IGNORED_STATE` are intentionally reported rather than imported.

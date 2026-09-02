@@ -2,6 +2,7 @@
 
 ## 2.8.0-SNAPSHOT
 
+- Removed the dedicated glow berry picking option; player harvesting now follows `player-block-interactions`.
 - Added broad player block interaction controls with per-material overrides.
 - Added player entity interaction and vehicle-entry controls.
 - Added hanging entity detachment controls for item frames and paintings.
