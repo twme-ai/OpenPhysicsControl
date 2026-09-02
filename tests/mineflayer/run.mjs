@@ -215,7 +215,7 @@ async function testRuleStorage (serverDir) {
       assert.match(rules, /^    GRAVEL: false$/m, 'legacy gravel override was not imported')
       assert.match(rules, /^bone-meal: false$/m, 'legacy bone meal alias was not imported')
       assert.match(rules, /^end-portal-frame-filling: false$/m, 'legacy End portal frame setting was not imported')
-      assert.match(rules, /^glow-berry-picking: false$/m, 'legacy glow berry setting was not imported')
+      assert.doesNotMatch(rules, /^glow-berry-picking:/m, 'removed glow berry rule was persisted')
       assert.match(rules, /^block-hit-projectile-removal: true$/m,
         'legacy block-hit projectile cleanup setting was not imported')
     } else if (file === 'world_nether.yml') {
@@ -261,7 +261,7 @@ async function testLocalizedMenu () {
       slot: 4,
       title: /玩家互動/,
       size: 18,
-      rules: Array.from({ length: 9 }, (_, slot) => slot)
+      rules: [0, 1, 2, 3, 5, 6, 7, 8]
     },
     {
       slot: 5,
@@ -780,7 +780,7 @@ async function testEndPortalFrameFilling () {
   console.log('PASS end-portal-frame-filling')
 }
 
-async function testGlowBerryPicking () {
+async function testGlowBerryPickingFollowsPlayerBlockInteractions () {
   const position = [2, 102, 0]
   async function ripeVine () {
     await commands(
@@ -790,22 +790,22 @@ async function testGlowBerryPicking () {
     await delay(250)
   }
 
-  await commands('clear PhysicsBot', 'opc set glow-berry-picking off world')
+  await commands('clear PhysicsBot', 'opc set player-block-interactions off world')
   await bot.unequip('hand')
   await ripeVine()
   await bot.activateBlock(await block(...position))
   await delay(500)
   assert.equal(String((await block(...position)).getProperties().berries), 'true',
-    'glow berry picking off: ripe cave vines were harvested')
+    'player block interactions off: ripe cave vines were harvested')
 
-  await commands('opc set glow-berry-picking on world')
+  await commands('opc set player-block-interactions on world')
   await ripeVine()
   await bot.activateBlock(await block(...position))
   await delay(500)
   assert.equal(String((await block(...position)).getProperties().berries), 'false',
-    'glow berry picking on: ripe cave vines were not harvested')
+    'player block interactions on: ripe cave vines were not harvested')
   await commands('clear PhysicsBot', 'setblock 2 102 0 air', 'setblock 2 103 0 air')
-  console.log('PASS glow-berry-picking')
+  console.log('PASS glow berry picking follows player-block-interactions')
 }
 
 function nearbyArrows () {
@@ -1054,7 +1054,7 @@ async function start () {
   await testPistons()
   await testHangingMangroveMaturation()
   await testEndPortalFrameFilling()
-  await testGlowBerryPicking()
+  await testGlowBerryPickingFollowsPlayerBlockInteractions()
   await testBlockHitProjectileRemoval()
   await testSpawnerMobSpawning()
   await testOxygenDepletion()

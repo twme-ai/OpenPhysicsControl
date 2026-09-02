@@ -13,7 +13,7 @@ OpenPhysicsControl 是從零撰寫、採 MIT 授權的 Bukkit 世界物理控制
 
 ## 功能
 
-86 項規則可按世界獨立控制，涵蓋方塊與流體、火焰與氣候、植物生長、實體物理、玩家互動、紅石以及自動化方塊。實驗性情境控制可停止玩家右鍵方塊、玩家操作或乘坐實體、展示框與畫脫落、床與重生錨的方塊來源爆炸、新放置方塊的初始連接，並以單一規則控制嗅探獸蛋完整孵化。預設值位於 `plugins/OpenPhysicsControl/default-rules.yml`，各世界狀態儲存在 `plugins/OpenPhysicsControl/worlds/<世界名稱>.yml`。設計與設定範例見 [`docs/scenario-controls.md`](docs/scenario-controls.md)，完整事件來源及測試狀態見 [`docs/physics-matrix.md`](docs/physics-matrix.md)。
+85 項規則可按世界獨立控制，涵蓋方塊與流體、火焰與氣候、植物生長、實體物理、玩家互動、紅石以及自動化方塊。實驗性情境控制可停止玩家右鍵方塊、玩家操作或乘坐實體、展示框與畫脫落、床與重生錨的方塊來源爆炸、新放置方塊的初始連接，並以單一規則控制嗅探獸蛋完整孵化。預設值位於 `plugins/OpenPhysicsControl/default-rules.yml`，各世界狀態儲存在 `plugins/OpenPhysicsControl/worlds/<世界名稱>.yml`。設計與設定範例見 [`docs/scenario-controls.md`](docs/scenario-controls.md)，完整事件來源及測試狀態見 [`docs/physics-matrix.md`](docs/physics-matrix.md)。
 
 `/opc` 開啟三列固定位置的物理分類選單，選擇分類後才會顯示該組規則；分類布局延續舊版熟悉的互動、建造、重力與流體、世界、生長區域，並加入機械分類。亦可使用 `/openphysics`、`/ophysics` 或 `/pc`。其他指令：
 

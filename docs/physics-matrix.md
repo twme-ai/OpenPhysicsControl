@@ -92,8 +92,7 @@ Two event surfaces have dedicated behavior. `explosion-block-damage` evaluates e
 | `turtle-egg-trample` | Same physical interaction events | Turtle egg trampling | UT |
 | `dripleaf-tilt` | Same physical interaction events | Big dripleaf tilt caused by entities | UT |
 | `end-portal-frame-filling` | `PlayerInteractEvent`, `EntityChangeBlockEvent` | Placing an Eye of Ender into an End portal frame | MF |
-| `glow-berry-picking` | `PlayerInteractEvent`, `EntityChangeBlockEvent` | Harvesting ripe glow berries from cave vines | MF |
-| `player-block-interactions` | right-click `PlayerInteractEvent` | Direct use of clicked blocks, with per-material overrides; dedicated frame-filling and berry-picking rules are evaluated first | MF |
+| `player-block-interactions` | right-click `PlayerInteractEvent` | Direct use of clicked blocks, including glow berry picking, with per-material overrides; dedicated frame-filling rules are evaluated first | MF |
 | `player-entity-interactions` | `PlayerInteractEntityEvent`, `PlayerArmorStandManipulateEvent`, player `VehicleEnterEvent` | Direct entity use, armor stand manipulation, and mounting boats or minecarts | MF |
 | `natural-mob-spawning` | `CreatureSpawnEvent` with `NATURAL` reason | Natural mob spawning only; commands, spawners, breeding, buckets, and plugins remain allowed | API |
 | `spawner-mob-spawning` | `SpawnerSpawnEvent`, `TrialSpawnerSpawnEvent`, `CreatureSpawnEvent` with `SPAWNER`/`TRIAL_SPAWNER` reasons | Standard and trial spawner output; natural, command, breeding, bucket, and plugin spawns remain allowed | MF, UT, API |

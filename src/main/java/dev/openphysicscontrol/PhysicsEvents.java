@@ -5,7 +5,6 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
-import org.bukkit.block.data.type.CaveVinesPlant;
 import org.bukkit.block.data.type.EndPortalFrame;
 import org.bukkit.block.data.type.MangrovePropagule;
 import org.bukkit.block.data.type.RespawnAnchor;
@@ -238,10 +237,6 @@ public final class PhysicsEvents implements Listener {
     public void change(EntityChangeBlockEvent event) {
         if (isEndPortalFrameFilling(event)) {
             control(event, event.getBlock(), Rule.END_PORTAL_FRAME_FILLING);
-            return;
-        }
-        if (isGlowBerryHarvest(event)) {
-            control(event, event.getBlock(), Rule.GLOW_BERRY_PICKING);
             return;
         }
         Rule rule;
@@ -635,17 +630,9 @@ public final class PhysicsEvents implements Listener {
             && next.hasEye();
     }
 
-    private static boolean isGlowBerryHarvest(EntityChangeBlockEvent event) {
-        return event.getBlock().getBlockData() instanceof CaveVinesPlant current
-            && event.getBlockData() instanceof CaveVinesPlant next
-            && current.isBerries()
-            && !next.isBerries();
-    }
-
     private static Rule rightClickRule(Material material) {
         return switch (material) {
             case END_PORTAL_FRAME -> Rule.END_PORTAL_FRAME_FILLING;
-            case CAVE_VINES, CAVE_VINES_PLANT -> Rule.GLOW_BERRY_PICKING;
             default -> null;
         };
     }

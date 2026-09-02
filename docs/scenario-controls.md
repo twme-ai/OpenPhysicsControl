@@ -13,7 +13,7 @@ OpenPhysicsControl uses broad, composable behavior rules instead of copying ever
 | `sniffer-egg-hatch` | `BlockGrowEvent`, `BlockFadeEvent` | Both sniffer-egg cracking stages and final hatching under one rule. |
 | `placed-block-connections` | `BlockPlaceEvent` followed by a no-physics block-data update | Initial connections on newly placed fences, panes/bars, walls, stairs, fence gates, and chests. `block-updates` separately controls whether existing neighboring blocks react. |
 
-Existing dedicated rules still run first. For example, End portal frame filling and glow berry picking retain their own switches before the broad player-block rule is evaluated. Redstone and machine processing remain separate from whether a player may interact with the block.
+The dedicated End portal frame filling rule still runs before the broad player-block rule is evaluated. Glow berry picking is covered by `player-block-interactions` instead of a separate switch. Redstone and machine processing remain separate from whether a player may interact with the block.
 
 ## Configuration examples
 
