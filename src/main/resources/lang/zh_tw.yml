@@ -1,5 +1,6 @@
 prefix: '<gold>[OpenPhysicsControl]</gold>'
 no-permission: '<prefix> <red>你沒有權限。</red>'
+current-world-only: '<prefix> <red>你只能修改目前所在世界的物理規則。</red>'
 players-only: '<prefix> <red>此指令只能由玩家使用。</red>'
 world-not-found: '<prefix> <red>找不到世界 <world>。</red>'
 rule-not-found: '<prefix> <red>未知規則 <rule>。</red>'
