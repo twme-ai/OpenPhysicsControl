@@ -24,6 +24,15 @@ OpenPhysicsControl 是從零撰寫、採 MIT 授權的 Bukkit 世界物理控制
 /opc reload
 ```
 
+### 權限
+
+- `openphysicscontrol.menu`：開啟玩家當下世界的物理規則選單。
+- `openphysicscontrol.set`：透過指令或選單修改任何已載入世界。
+- `openphysicscontrol.set.current-world`：只允許玩家透過指令或選單修改當下所在世界；即使在指令中指定其他世界，或開啟選單後移動到其他世界，也不會放行。
+- `openphysicscontrol.reload`：重新載入設定與世界規則。
+
+OP 仍可修改所有世界。若玩家同時擁有 `openphysicscontrol.set` 與 `openphysicscontrol.set.current-world`，範圍較大的 `openphysicscontrol.set` 優先。
+
 指令狀態以規則行為為準：大多數規則的 `on` 代表物理正常運作、`off` 代表停止；`block-hit-projectile-removal` 則是相容舊版的可選清理，`on` 時會移除命中方塊的箭矢與三叉戟，預設 `off` 以保留原版箭矢留存。
 
 `oxygen-depletion` 的 `off` 只會阻止水中氧氣減少，離水後仍會恢復氧氣；`drowning-damage` 是獨立規則。`fire-damage` 不會攔截仙人掌、甜莓叢或尖滴水石等一般接觸傷害，這些不屬於火焰與高溫控制範圍。

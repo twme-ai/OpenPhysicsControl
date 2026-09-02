@@ -79,10 +79,7 @@ public final class RulesMenu implements InventoryHolder {
 
         Rule rule = this.ruleSlots.get(rawSlot);
         if (rule == null) return;
-        if (!this.viewer.isOp() && !this.viewer.hasPermission("openphysicscontrol.set")) {
-            this.plugin.messages().send(this.viewer, "no-permission");
-            return;
-        }
+        if (!this.plugin.ensureCanEditWorld(this.viewer, this.world)) return;
         boolean enabled = this.plugin.rules().set(this.world, rule, null);
         refreshRule(rawSlot, rule);
         this.plugin.messages().send(this.viewer, "rule-changed", Map.of(

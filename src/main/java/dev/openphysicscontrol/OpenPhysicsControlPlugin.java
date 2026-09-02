@@ -19,6 +19,9 @@ import java.util.Locale;
 import java.util.Map;
 
 public final class OpenPhysicsControlPlugin extends JavaPlugin implements Listener {
+    static final String SET_PERMISSION = "openphysicscontrol.set";
+    static final String SET_CURRENT_WORLD_PERMISSION = "openphysicscontrol.set.current-world";
+
     private LocaleService locales;
     private Messages messages;
     private RuleStore rules;
@@ -69,7 +72,7 @@ public final class OpenPhysicsControlPlugin extends JavaPlugin implements Listen
     }
 
     private boolean setRule(CommandSender sender, String[] args) {
-        if (!sender.isOp() && !sender.hasPermission("openphysicscontrol.set")) {
+        if (!hasAnyWorldEditPermission(sender)) {
             this.messages.send(sender, "no-permission");
             return true;
         }
@@ -104,6 +107,7 @@ public final class OpenPhysicsControlPlugin extends JavaPlugin implements Listen
             this.messages.send(sender, "world-not-found", Map.of("world", args.length >= 4 ? args[3] : "?"));
             return true;
         }
+        if (!ensureCanEditWorld(sender, world)) return true;
         boolean enabled = this.rules.set(world, rule, requested);
         this.messages.send(sender, "rule-changed", Map.of(
             "rule", this.messages.plain(sender, rule.messageKey()),
@@ -114,7 +118,7 @@ public final class OpenPhysicsControlPlugin extends JavaPlugin implements Listen
     }
 
     private boolean setMaterial(CommandSender sender, String[] args) {
-        if (!sender.isOp() && !sender.hasPermission("openphysicscontrol.set")) {
+        if (!hasAnyWorldEditPermission(sender)) {
             this.messages.send(sender, "no-permission");
             return true;
         }
@@ -143,6 +147,7 @@ public final class OpenPhysicsControlPlugin extends JavaPlugin implements Listen
             this.messages.send(sender, "world-not-found", Map.of("world", args.length >= 5 ? args[4] : "?"));
             return true;
         }
+        if (!ensureCanEditWorld(sender, world)) return true;
         String state = args[3].toLowerCase(Locale.ROOT);
         if (state.equals("clear") || state.equals("reset")) {
             this.rules.clearMaterial(world, rule, material);
@@ -217,7 +222,7 @@ public final class OpenPhysicsControlPlugin extends JavaPlugin implements Listen
         } else if (args.length == 3 && args[0].equalsIgnoreCase("set")) {
             options.addAll(List.of("on", "off", "toggle"));
         } else if (args.length == 4 && args[0].equalsIgnoreCase("set")) {
-            for (World world : this.getServer().getWorlds()) options.add(world.getName());
+            addEditableWorlds(sender, options);
         } else if (args.length == 2 && (args[0].equalsIgnoreCase("material") || args[0].equalsIgnoreCase("materials"))) {
             for (Rule rule : Rule.values()) options.add(rule.key());
         } else if (args.length == 3 && (args[0].equalsIgnoreCase("material") || args[0].equalsIgnoreCase("materials"))) {
@@ -227,7 +232,7 @@ public final class OpenPhysicsControlPlugin extends JavaPlugin implements Listen
         } else if (args.length == 4 && (args[0].equalsIgnoreCase("material") || args[0].equalsIgnoreCase("materials"))) {
             options.addAll(List.of("on", "off", "toggle", "clear"));
         } else if (args.length == 5 && (args[0].equalsIgnoreCase("material") || args[0].equalsIgnoreCase("materials"))) {
-            for (World world : this.getServer().getWorlds()) options.add(world.getName());
+            addEditableWorlds(sender, options);
         } else if (args.length == 2 && (args[0].equalsIgnoreCase("language") || args[0].equalsIgnoreCase("lang"))) {
             options.add("auto");
             options.addAll(this.locales.available());
@@ -235,6 +240,39 @@ public final class OpenPhysicsControlPlugin extends JavaPlugin implements Listen
         String prefix = args.length == 0 ? "" : args[args.length - 1].toLowerCase(Locale.ROOT);
         options.removeIf(option -> !option.toLowerCase(Locale.ROOT).startsWith(prefix));
         return options;
+    }
+
+    boolean ensureCanEditWorld(CommandSender sender, World world) {
+        if (canEditWorld(sender, world)) return true;
+        String message = sender instanceof Player && sender.hasPermission(SET_CURRENT_WORLD_PERMISSION)
+            ? "current-world-only"
+            : "no-permission";
+        this.messages.send(sender, message);
+        return false;
+    }
+
+    private boolean canEditWorld(CommandSender sender, World world) {
+        boolean playerWithCurrentWorldPermission = sender instanceof Player player
+            && player.hasPermission(SET_CURRENT_WORLD_PERMISSION);
+        boolean currentWorld = sender instanceof Player player && player.getWorld() == world;
+        return grantsWorldEdit(sender.isOp(), sender.hasPermission(SET_PERMISSION),
+            playerWithCurrentWorldPermission, currentWorld);
+    }
+
+    private boolean hasAnyWorldEditPermission(CommandSender sender) {
+        return sender.isOp() || sender.hasPermission(SET_PERMISSION)
+            || sender instanceof Player && sender.hasPermission(SET_CURRENT_WORLD_PERMISSION);
+    }
+
+    private void addEditableWorlds(CommandSender sender, List<String> options) {
+        for (World world : this.getServer().getWorlds()) {
+            if (canEditWorld(sender, world)) options.add(world.getName());
+        }
+    }
+
+    static boolean grantsWorldEdit(boolean operator, boolean allWorldsPermission,
+                                   boolean currentWorldPermission, boolean currentWorld) {
+        return operator || allWorldsPermission || (currentWorldPermission && currentWorld);
     }
 
     @EventHandler(ignoreCancelled = true)

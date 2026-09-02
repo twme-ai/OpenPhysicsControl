@@ -29,6 +29,11 @@ final class ResourceTest {
         Map<String, Object> commands = (Map<String, Object>) plugin.get("commands");
         Map<String, Object> command = (Map<String, Object>) commands.get("openphysics");
         assertEquals(List.of("ophysics", "opc", "pc"), command.get("aliases"));
+        Map<String, Object> permissions = (Map<String, Object>) plugin.get("permissions");
+        assertTrue(permissions.containsKey(OpenPhysicsControlPlugin.SET_PERMISSION));
+        Map<String, Object> currentWorld = (Map<String, Object>) permissions.get(
+            OpenPhysicsControlPlugin.SET_CURRENT_WORLD_PERMISSION);
+        assertEquals(Boolean.FALSE, currentWorld.get("default"));
     }
 
     @Test

@@ -1,5 +1,6 @@
 prefix: '<gold>[OpenPhysicsControl]</gold>'
 no-permission: '<prefix> <red>You do not have permission.</red>'
+current-world-only: '<prefix> <red>You may only change physics in your current world.</red>'
 players-only: '<prefix> <red>This command is only available to players.</red>'
 world-not-found: '<prefix> <red>World <world> was not found.</red>'
 rule-not-found: '<prefix> <red>Unknown rule <rule>.</red>'

@@ -12,8 +12,14 @@ commands:
     usage: '/<command> [set|material|language|reload]'
 permissions:
   openphysicscontrol.menu:
+    description: 'Open the physics rules menu for the current world'
     default: op
   openphysicscontrol.set:
+    description: 'Change physics rules in any loaded world'
     default: op
+  openphysicscontrol.set.current-world:
+    description: "Change physics rules only in the player's current world"
+    default: false
   openphysicscontrol.reload:
+    description: 'Reload OpenPhysicsControl configuration and world rules'
     default: op

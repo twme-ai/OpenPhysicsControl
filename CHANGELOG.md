@@ -10,6 +10,7 @@
 - Added independent control of initial connections on newly placed fences, panes/bars, walls, stairs, fence gates, and chests.
 - Kept placement-time connections separate from neighbor `block-updates`, with per-material overrides for both sides of a placement.
 - Added a GitHub Actions workflow that tests both Spigot and Paper API profiles and uploads the shaded JAR.
+- Added `openphysicscontrol.set.current-world` for delegating rule changes only in a player's current world, across commands and the GUI.
 
 ## 2.7.0 - 2026-07-30
 
