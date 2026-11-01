@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.8.0-SNAPSHOT
+## 2.8.0 - 2026-11-01
 
 - Updated the build to Paper `26.3.build.235-stable` and Spigot `26.3-R0.1-SNAPSHOT`, and aligned the shaded MiniMessage with Paper 26.3's Adventure 5.2.0.
 - Restored `fire-damage`, `freeze-damage`, `drowning-damage`, and `fall-damage` control over blockless damage that Paper 26.3 reports as `CUSTOM`, such as `/damage … minecraft:in_fire`, by falling back to the damage type.
