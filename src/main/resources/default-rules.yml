@@ -71,6 +71,7 @@ natural-mob-spawning: true
 spawner-mob-spawning: true
 mob-breeding: true
 mob-transform: true
+mob-construction: true
 beehive-entry: true
 item-despawn: true
 item-merge: true
@@ -86,6 +87,7 @@ oxygen-depletion: true
 fire-damage: true
 freeze-damage: true
 vehicle-entity-collision: true
+entity-collisions: true
 hunger: true
 natural-regen: true
 
@@ -98,6 +100,7 @@ campfire-cooking: true
 crafter: true
 bell-ring: true
 note-blocks: true
+trial-vaults: true
 
 # Exact per-block overrides. A world-specific material-overrides section takes precedence.
 # The value here is used only when a rule reaches this material; it overrides the rule's value above.

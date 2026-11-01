@@ -70,6 +70,7 @@ public enum Rule {
     SPAWNER_MOB_SPAWNING(Group.MOBS, Material.SPAWNER),
     MOB_BREEDING(Group.MOBS, Material.WHEAT),
     MOB_TRANSFORM(Group.MOBS, Material.ROTTEN_FLESH),
+    MOB_CONSTRUCTION(Group.MOBS, Material.CARVED_PUMPKIN),
     BEEHIVE_ENTRY(Group.MOBS, Material.BEEHIVE),
     ITEM_DESPAWN(Group.ENTITIES, Material.CLOCK),
     ITEM_MERGE(Group.ENTITIES, Material.HOPPER),
@@ -84,6 +85,7 @@ public enum Rule {
     FIRE_DAMAGE(Group.ENTITIES, Material.MAGMA_BLOCK),
     FREEZE_DAMAGE(Group.ENTITIES, Material.POWDER_SNOW_BUCKET),
     VEHICLE_ENTITY_COLLISION(Group.ENTITIES, Material.MINECART),
+    ENTITY_COLLISIONS(Group.ENTITIES, Material.SLIME_BALL),
     HUNGER(Group.PLAYERS, Material.ROTTEN_FLESH),
     NATURAL_REGEN(Group.PLAYERS, Material.GOLDEN_APPLE),
 
@@ -94,7 +96,8 @@ public enum Rule {
     CAMPFIRE_COOKING(Group.MACHINES, Material.CAMPFIRE),
     CRAFTER(Group.MACHINES, Material.CRAFTER),
     BELL_RING(Group.MACHINES, Material.BELL),
-    NOTE_BLOCKS(Group.MACHINES, Material.NOTE_BLOCK);
+    NOTE_BLOCKS(Group.MACHINES, Material.NOTE_BLOCK),
+    TRIAL_VAULTS(Group.MACHINES, Material.VAULT);
 
     private final Group group;
     private final Material icon;

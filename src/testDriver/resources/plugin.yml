@@ -1,0 +1,13 @@
+name: OpenPhysicsControlTestDriver
+version: '1'
+main: dev.openphysicscontrol.testdriver.TestDriverPlugin
+description: 'Test-only block interaction driver for the OpenPhysicsControl Mineflayer suite'
+api-version: '1.13'
+commands:
+  opctest:
+    description: 'Simulate a player right-clicking a block'
+    usage: '/opctest use <player> <x> <y> <z> <face>'
+    permission: openphysicscontrol.testdriver
+permissions:
+  openphysicscontrol.testdriver:
+    default: op

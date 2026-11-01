@@ -5,6 +5,7 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
+import org.bukkit.block.data.Ageable;
 import org.bukkit.block.data.type.CaveVinesPlant;
 import org.bukkit.block.data.type.EndPortalFrame;
 import org.bukkit.block.data.type.MangrovePropagule;
@@ -46,6 +47,7 @@ import org.bukkit.event.block.NotePlayEvent;
 import org.bukkit.event.block.SculkBloomEvent;
 import org.bukkit.event.block.SpongeAbsorbEvent;
 import org.bukkit.event.block.TNTPrimeEvent;
+import org.bukkit.event.block.VaultDisplayItemEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.CreeperPowerEvent;
 import org.bukkit.event.entity.EntityAirChangeEvent;
@@ -123,23 +125,33 @@ public final class PhysicsEvents implements Listener {
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
-    public void naturalMangroveMaturation(BlockPhysicsEvent event) {
+    public void naturalAgeAdvance(BlockPhysicsEvent event) {
         Block block = event.getBlock();
-        if (block.getType() != Material.MANGROVE_PROPAGULE
-            || event.getChangedType() != Material.MANGROVE_PROPAGULE
-            || !disabled(block.getWorld(), Rule.TREE_GROWTH, block.getType())
+        Material material = block.getType();
+        Rule rule = naturalAgeRule(material);
+        if (rule == null
+            || event.getChangedType() != material
+            || !disabled(block.getWorld(), rule, material)
             || !event.getSourceBlock().equals(block)) return;
 
-        if (!(block.getBlockData() instanceof MangrovePropagule current)
-            || !current.isHanging()
+        if (!(block.getBlockData() instanceof Ageable current)
             || current.getAge() == 0
-            || !NaturalTickOrigin.isMangrovePropaguleMaturation()) return;
+            || current instanceof MangrovePropagule propagule && !propagule.isHanging()
+            || !NaturalTickOrigin.isRandomTickOf(material)) return;
 
         // Bukkit exposes this event after the age is written, so restore the preceding state without recursion.
-        MangrovePropagule previous = (MangrovePropagule) current.clone();
+        Ageable previous = (Ageable) current.clone();
         previous.setAge(current.getAge() - 1);
         block.setBlockData(previous, false);
         event.setCancelled(true);
+    }
+
+    private static Rule naturalAgeRule(Material material) {
+        return switch (material) {
+            case MANGROVE_PROPAGULE -> Rule.TREE_GROWTH;
+            case SUGAR_CANE, CACTUS -> Rule.VERTICAL_PLANT_GROWTH;
+            default -> null;
+        };
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
@@ -206,6 +218,11 @@ public final class PhysicsEvents implements Listener {
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void moisture(MoistureChangeEvent event) {
         control(event, event.getBlock(), Rule.FARMLAND_DRY);
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+    public void vaultDisplayItem(VaultDisplayItemEvent event) {
+        control(event, event.getBlock(), Rule.TRIAL_VAULTS);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
@@ -646,6 +663,7 @@ public final class PhysicsEvents implements Listener {
         return switch (material) {
             case END_PORTAL_FRAME -> Rule.END_PORTAL_FRAME_FILLING;
             case CAVE_VINES, CAVE_VINES_PLANT -> Rule.GLOW_BERRY_PICKING;
+            case VAULT -> Rule.TRIAL_VAULTS;
             default -> null;
         };
     }

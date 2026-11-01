@@ -8,7 +8,7 @@ OpenPhysicsControl uses broad, composable behavior rules instead of copying ever
 |---|---|---|
 | `player-block-interactions` | Right-click `PlayerInteractEvent` | Levers, buttons, beds, respawn anchors, brewing stands, campfires, chiseled bookshelves, beacons, anvils, flower pots, bells, lodestones, and other clicked blocks. Per-material overrides narrow the rule to selected block types. |
 | `player-entity-interactions` | `PlayerInteractEntityEvent`, `PlayerArmorStandManipulateEvent`, player `VehicleEnterEvent` | Item frames, armor stands, boats, minecarts, and other direct entity interaction or mounting. |
-| `hanging-entity-detachment` | `HangingBreakEvent` | Item frames, glow item frames, and paintings removed by lost support, obstruction, explosions, or entities. |
+| `hanging-entity-detachment` | `HangingBreakEvent`, Paper `EntityBreakEvent` | Item frames, glow item frames, paintings, and 26.3 cushions removed by lost support, obstruction, explosions, or entities. |
 | `block-origin-explosions` | `BlockExplodeEvent` | Bed and respawn-anchor block explosions. Disabling the corresponding block interaction is the stronger pre-explosion control for player use. |
 | `sniffer-egg-hatch` | `BlockGrowEvent`, `BlockFadeEvent` | Both sniffer-egg cracking stages and final hatching under one rule. |
 | `placed-block-connections` | `BlockPlaceEvent` followed by a no-physics block-data update | Initial connections on newly placed fences, panes/bars, walls, stairs, fence gates, and chests. `block-updates` separately controls whether existing neighboring blocks react. |

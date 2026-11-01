@@ -106,6 +106,7 @@ final class PhysicsClassifier {
         return switch (reason) {
             case NATURAL -> Rule.NATURAL_MOB_SPAWNING;
             case SPAWNER, TRIAL_SPAWNER -> Rule.SPAWNER_MOB_SPAWNING;
+            case BUILD_SNOWMAN, BUILD_IRONGOLEM, BUILD_COPPERGOLEM, BUILD_WITHER -> Rule.MOB_CONSTRUCTION;
             default -> null;
         };
     }
@@ -120,7 +121,9 @@ final class PhysicsClassifier {
             Rule thermalContact = thermalContact(byBlock);
             if (thermalContact != null) return thermalContact;
         }
-        return damage(event.getCause());
+        Rule rule = damage(event.getCause());
+        // Paper 26.3 reports blockless fire and freeze damage, such as /damage, as CUSTOM.
+        return rule != null ? rule : damageType(event.getDamageSource().getDamageType().getKey().getKey());
     }
 
     static Rule damage(EntityDamageEvent.DamageCause cause) {
@@ -129,6 +132,16 @@ final class PhysicsClassifier {
             case DROWNING -> Rule.DROWNING_DAMAGE;
             case FIRE, FIRE_TICK, MELTING, LAVA, HOT_FLOOR, CAMPFIRE -> Rule.FIRE_DAMAGE;
             case FREEZE -> Rule.FREEZE_DAMAGE;
+            default -> null;
+        };
+    }
+
+    static Rule damageType(String key) {
+        return switch (key) {
+            case "fall", "fly_into_wall", "falling_block", "falling_anvil", "falling_stalactite" -> Rule.FALL_DAMAGE;
+            case "drown" -> Rule.DROWNING_DAMAGE;
+            case "in_fire", "on_fire", "lava", "hot_floor", "campfire" -> Rule.FIRE_DAMAGE;
+            case "freeze" -> Rule.FREEZE_DAMAGE;
             default -> null;
         };
     }
@@ -164,7 +177,7 @@ final class PhysicsClassifier {
     }
 
     private static boolean isVerticalPlant(String name) {
-        return name.equals("SUGAR_CANE") || name.equals("CACTUS") || name.equals("BAMBOO")
+        return name.equals("SUGAR_CANE") || name.equals("CACTUS") || name.equals("CACTUS_FLOWER") || name.equals("BAMBOO")
             || name.equals("BAMBOO_SAPLING") || name.equals("KELP") || name.equals("KELP_PLANT")
             || name.equals("CHORUS_FLOWER") || name.equals("CHORUS_PLANT");
     }
