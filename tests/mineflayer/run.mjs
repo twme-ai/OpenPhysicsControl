@@ -381,7 +381,7 @@ async function testLocalizedMenu () {
       slot: 22,
       title: /機械與處理/,
       size: 18,
-      rules: [0, 1, 2, 3, 5, 6, 7, 8]
+      rules: Array.from({ length: 9 }, (_, slot) => slot)
     }
   ]
 
@@ -1071,6 +1071,120 @@ async function testSpawnerMobSpawning () {
   console.log('PASS spawner-mob-spawning')
 }
 
+async function testTrialSpawnerMobSpawning () {
+  const spawner = 'minecraft:trial_spawner{required_player_range:16,target_cooldown_length:1,normal_config:{spawn_range:1,total_mobs:1.0f,simultaneous_mobs:1.0f,ticks_between_spawn:1,spawn_potentials:[{data:{entity:{id:"minecraft:armor_stand"}},weight:1}]}}'
+  await commands(
+    'difficulty normal',
+    'gamerule spawner_blocks_work true',
+    'gamemode survival PhysicsBot',
+    'tp PhysicsBot 25 100 -3',
+    'kill @e[type=minecraft:armor_stand]',
+    'opc set spawner-mob-spawning off world',
+    `setblock 25 100 -6 ${spawner}`
+  )
+  await delay(3000)
+  assert.equal(nearbyEntities('armor_stand').length, 0,
+    'spawner mob spawning off: a trial spawner spawned an armor stand')
+
+  await commands('opc set spawner-mob-spawning on world')
+  await waitForNearbyEntity('armor_stand', 8000)
+  await commands(
+    'setblock 25 100 -6 air',
+    'kill @e[type=minecraft:armor_stand]',
+    'gamemode creative PhysicsBot',
+    'tp PhysicsBot 0 100 0',
+    'difficulty peaceful'
+  )
+  console.log('PASS trial spawner mob spawning')
+}
+
+async function testVerticalPlantAge () {
+  const cane = [19, 105, -7]
+  const cactus = [22, 105, -7]
+  async function plant (age) {
+    await commands(
+      'gamerule minecraft:random_tick_speed 0',
+      'fill 18 104 -8 23 107 -6 air',
+      'fill 18 103 -8 23 103 -6 minecraft:stone',
+      'fill 18 104 -8 20 104 -6 minecraft:stone',
+      'setblock 19 104 -7 minecraft:sand',
+      'setblock 20 104 -7 minecraft:water',
+      'setblock 22 104 -7 minecraft:sand',
+      `setblock ${cane.join(' ')} minecraft:sugar_cane[age=${age}]`,
+      `setblock ${cactus.join(' ')} minecraft:cactus[age=${age}]`,
+      'gamerule minecraft:random_tick_speed 3000'
+    )
+    await delay(1600)
+    await commands('gamerule minecraft:random_tick_speed 0')
+  }
+
+  await commands('opc set vertical-plant-growth off world')
+  await plant(0)
+  await expectServerBlockState(cane, 'sugar_cane[age=0]', 'vertical plant growth off: sugar cane age advanced')
+  await expectServerBlockState(cactus, 'cactus[age=0]', 'vertical plant growth off: cactus age advanced')
+  await expectServerBlockState([19, 106, -7], 'air', 'vertical plant growth off: sugar cane grew')
+  await expectServerBlockState([22, 106, -7], 'air', 'vertical plant growth off: cactus grew')
+
+  await commands(`setblock ${cane.join(' ')} minecraft:sugar_cane[age=7]`)
+  await expectServerBlockState(cane, 'sugar_cane[age=7]',
+    'vertical plant growth off: explicit block-state command was reverted')
+
+  // Start at age 15 so a single random tick grows a section instead of waiting for 16.
+  await commands('opc set vertical-plant-growth on world')
+  await plant(15)
+  await expectServerBlockState([19, 106, -7], 'sugar_cane', 'vertical plant growth on: sugar cane did not grow')
+  assert.equal(await serverMatches('unless block 22 106 -7 minecraft:air'), true,
+    'vertical plant growth on: cactus did not grow')
+  await commands('fill 18 103 -8 23 108 -6 air', 'gamerule minecraft:random_tick_speed 3')
+  console.log('PASS vertical plant age')
+}
+
+async function testTrialVaults () {
+  const vault = [0, 100, -6]
+  const vaultState = state => serverMatches(`if block ${vault.join(' ')} minecraft:vault[vault_state=${state}]`)
+  const holdsKey = () => serverMatches('if items entity PhysicsBot weapon.mainhand minecraft:trial_key')
+
+  await commands(
+    'gamemode survival PhysicsBot',
+    'tp PhysicsBot 0 100 -4 180 30',
+    'clear PhysicsBot minecraft:trial_key',
+    'give PhysicsBot minecraft:trial_key 1',
+    'opc set trial-vaults off world',
+    `setblock ${vault.join(' ')} minecraft:vault`
+  )
+  await delay(350)
+  const key = bot.inventory.items().find(item => item.name === 'trial_key')
+  assert.ok(key, 'Mineflayer did not receive a trial key')
+  await bot.equip(key, 'hand')
+  await delay(1500)
+  assert.equal(await vaultState('inactive'), true, 'trial vaults off: the vault activated for a nearby player')
+
+  await commands('opc set trial-vaults on world')
+  await delay(1500)
+  assert.equal(await vaultState('active'), true, 'trial vaults on: the vault did not activate')
+
+  await commands('opc set trial-vaults off world')
+  await useBlock(vault, new Vec3(0, 1, 0))
+  await delay(500)
+  assert.equal(await holdsKey(), true, 'trial vaults off: the trial key was consumed')
+  assert.equal(await vaultState('active'), true, 'trial vaults off: the vault started unlocking')
+
+  await commands('opc set trial-vaults on world')
+  await useBlock(vault, new Vec3(0, 1, 0))
+  await delay(300)
+  assert.equal(await holdsKey(), false, 'trial vaults on: the trial key was not consumed')
+  assert.equal(await vaultState('active'), false, 'trial vaults on: the vault did not unlock')
+
+  await commands(
+    `setblock ${vault.join(' ')} air`,
+    'kill @e[type=minecraft:item]',
+    'clear PhysicsBot minecraft:trial_key',
+    'gamemode creative PhysicsBot',
+    'tp PhysicsBot 0 100 0'
+  )
+  console.log('PASS trial-vaults')
+}
+
 async function testOxygenDepletion () {
   async function airChangesWithOxygenRule (enabled) {
     await commands(
@@ -1225,10 +1339,13 @@ async function start () {
     testRedstone,
     testPistons,
     testHangingMangroveMaturation,
+    testVerticalPlantAge,
     testEndPortalFrameFilling,
     testGlowBerryPicking,
     testBlockHitProjectileRemoval,
     testSpawnerMobSpawning,
+    testTrialSpawnerMobSpawning,
+    testTrialVaults,
     testOxygenDepletion,
     testFireAndFreezeDamage,
     testEntityExplosionPrime,

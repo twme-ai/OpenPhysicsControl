@@ -1,6 +1,6 @@
 # Minecraft physics coverage
 
-This audit defines "physics" as autonomous world simulation, physical entity effects, and block-machine processing that can be controlled through Bukkit event surfaces. Most rows use portable Bukkit events; hanging mangrove propagules use a narrowly scoped post-change rollback gated by the verified server random-tick call origin. The inventory was derived from the Paper 26.3 and Spigot 26.3 API event classes under `block`, `world`, `weather`, relevant `entity`, and `inventory` packages.
+This audit defines "physics" as autonomous world simulation, physical entity effects, and block-machine processing that can be controlled through Bukkit event surfaces. Most rows use portable Bukkit events; hanging mangrove propagules, sugar cane, and cactus ages use a narrowly scoped post-change rollback gated by the verified server random-tick call origin. The inventory was derived from the Paper 26.3 and Spigot 26.3 API event classes under `block`, `world`, `weather`, relevant `entity`, and `inventory` packages.
 
 It intentionally excludes block break and general placement protection, inventory item movement, commands and custom plugin mutations, client-side collision prediction, chunk generation, and mob AI movement for which Spigot has no portable cancellable event. Placement-time structural connections are the narrow placement exception. Broad, opt-in-configurable player block/entity interaction surfaces cover the reference scenario list without duplicating one rule per block. All rules are enabled by default; the legacy-compatible block-hit arrow/trident cleanup is intentionally disabled by default.
 
@@ -69,7 +69,7 @@ Two event surfaces have dedicated behavior. `explosion-block-damage` evaluates e
 | `leaf-decay` | `LeavesDecayEvent` | Unsupported leaf decay | API |
 | `crop-growth` | `BlockGrowEvent` | Wheat, carrots, potatoes, beetroot, wart, cocoa, berries, torchflowers, and pitcher crops | UT |
 | `stem-growth` | `BlockGrowEvent` | Pumpkin and melon stems/fruit | UT |
-| `vertical-plant-growth` | `BlockGrowEvent`, `BlockSpreadEvent`, `StructureGrowEvent` | Sugar cane, cactus, bamboo, kelp, and chorus | UT |
+| `vertical-plant-growth` | `BlockGrowEvent`, `BlockSpreadEvent`, `StructureGrowEvent`, natural-origin `BlockPhysicsEvent` rollback | Sugar cane, cactus, cactus flowers, bamboo, kelp, and chorus; the random-tick age counter of sugar cane and cactus is also held | MF, UT |
 | `vine-growth` | `BlockGrowEvent`, `BlockSpreadEvent` | Vines, cave vines, twisting/weeping vines, and glow lichen | UT |
 | `mushroom-growth` | `BlockGrowEvent`, `BlockSpreadEvent`, `StructureGrowEvent` | Small mushrooms and giant mushrooms/fungi | UT |
 | `tree-growth` | `StructureGrowEvent`, natural-origin `BlockPhysicsEvent` rollback | All tree species exposed by `TreeType`, planted mangrove propagules, and natural age 0-to-4 maturation of hanging propagules | MF, UT |
@@ -96,7 +96,7 @@ Two event surfaces have dedicated behavior. `explosion-block-damage` evaluates e
 | `player-block-interactions` | right-click `PlayerInteractEvent` | Direct use of clicked blocks, with per-material overrides; dedicated frame-filling and berry-picking rules are evaluated first | MF |
 | `player-entity-interactions` | `PlayerInteractEntityEvent`, `PlayerArmorStandManipulateEvent`, player `VehicleEnterEvent` | Direct entity use, armor stand manipulation, and mounting boats or minecarts | MF |
 | `natural-mob-spawning` | `CreatureSpawnEvent` with `NATURAL` reason | Natural mob spawning only; commands, spawners, breeding, buckets, and plugins remain allowed | API |
-| `spawner-mob-spawning` | `SpawnerSpawnEvent`, `TrialSpawnerSpawnEvent`, `CreatureSpawnEvent` with `SPAWNER`/`TRIAL_SPAWNER` reasons | Standard and trial spawner output; natural, command, breeding, bucket, and plugin spawns remain allowed | MF, UT, API |
+| `spawner-mob-spawning` | `SpawnerSpawnEvent`, `TrialSpawnerSpawnEvent`, `CreatureSpawnEvent` with `SPAWNER`/`TRIAL_SPAWNER` reasons | Standard and trial spawner output; natural, command, breeding, bucket, and plugin spawns remain allowed | MF (standard and trial), UT, API |
 | `mob-breeding` | `EntityEnterLoveModeEvent`, `EntityBreedEvent` | Entry into love mode and animal breeding completion | API |
 | `mob-construction` | `CreatureSpawnEvent` with `BUILD_SNOWMAN`, `BUILD_IRONGOLEM`, `BUILD_COPPERGOLEM`, or `BUILD_WITHER` reasons | Golems and the Wither built from block patterns; the pattern blocks remain when stopped | MF, UT |
 | `mob-transform` | `EntityTransformEvent`, runtime-selected `CubeMobSplitEvent`/`SlimeSplitEvent` and `EntityZapEvent`/`PigZapEvent`, `CreeperPowerEvent`, `SheepRegrowWoolEvent` | Replacement transformations, cube-mob splitting, lightning state changes, and wool regrowth | API |
@@ -130,6 +130,7 @@ Two event surfaces have dedicated behavior. `explosion-block-damage` evaluates e
 | `crafter` | `CrafterCraftEvent` | Crafter block recipes | API |
 | `bell-ring` | `BellRingEvent` | Bell activation | API |
 | `note-blocks` | `NotePlayEvent` | Note-block playback | API |
+| `trial-vaults` | Right-click `PlayerInteractEvent` on vaults, `VaultDisplayItemEvent`, Paper `VaultChangeStateEvent` for `INACTIVE` to `ACTIVE` and any transition to `UNLOCKING` | Key insertion is refused before the key is consumed, inactive vaults stay dark, and the display item stops cycling; vaults already unlocking or ejecting finish their cycle | MF, API |
 
 ## Mineflayer boundary
 

@@ -96,7 +96,8 @@ public enum Rule {
     CAMPFIRE_COOKING(Group.MACHINES, Material.CAMPFIRE),
     CRAFTER(Group.MACHINES, Material.CRAFTER),
     BELL_RING(Group.MACHINES, Material.BELL),
-    NOTE_BLOCKS(Group.MACHINES, Material.NOTE_BLOCK);
+    NOTE_BLOCKS(Group.MACHINES, Material.NOTE_BLOCK),
+    TRIAL_VAULTS(Group.MACHINES, Material.VAULT);
 
     private final Group group;
     private final Material icon;

@@ -177,7 +177,7 @@ final class PhysicsClassifier {
     }
 
     private static boolean isVerticalPlant(String name) {
-        return name.equals("SUGAR_CANE") || name.equals("CACTUS") || name.equals("BAMBOO")
+        return name.equals("SUGAR_CANE") || name.equals("CACTUS") || name.equals("CACTUS_FLOWER") || name.equals("BAMBOO")
             || name.equals("BAMBOO_SAPLING") || name.equals("KELP") || name.equals("KELP_PLANT")
             || name.equals("CHORUS_FLOWER") || name.equals("CHORUS_PLANT");
     }

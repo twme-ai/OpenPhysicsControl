@@ -6,6 +6,7 @@ import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockEvent;
 import org.bukkit.event.entity.EntityEvent;
 import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -23,6 +24,7 @@ final class DynamicEntityListeners implements Listener {
     private static final String SPIGOT_PIG_ZAP = "org.bukkit.event.entity.PigZapEvent";
     private static final String PAPER_ENTITY_BREAK = "io.papermc.paper.event.entity.EntityBreakEvent";
     private static final String PAPER_ENTITY_COLLISION = "io.papermc.paper.event.entity.EntityCollideWithEntityEvent";
+    private static final String PAPER_VAULT_STATE = "io.papermc.paper.event.block.VaultChangeStateEvent";
 
     private static final ClassValue<Method> COLLIDING_ENTITIES = new ClassValue<>() {
         @Override
@@ -50,6 +52,9 @@ final class DynamicEntityListeners implements Listener {
             PAPER_ENTITY_BREAK);
         registerFirstAvailable(plugin, rules, Rule.ENTITY_COLLISIONS, "entity-to-entity collision",
             DynamicEntityListeners::firstCollidingEntityWorld, PAPER_ENTITY_COLLISION);
+        // Only stop transitions that start a vault cycle; unlocking or ejecting vaults finish so keys are never lost.
+        registerFirstAvailable(plugin, rules, Rule.TRIAL_VAULTS, "vault activation",
+            DynamicEntityListeners::vaultCycleStartWorld, PAPER_VAULT_STATE);
     }
 
     private static void registerFirstAvailable(
@@ -69,6 +74,20 @@ final class DynamicEntityListeners implements Listener {
                 && !entities.isEmpty() && entities.getFirst() instanceof Entity entity) return entity.getWorld();
         } catch (ReflectiveOperationException | IllegalStateException unavailable) {
             // Leave the collision untouched if Paper changes the event shape.
+        }
+        return null;
+    }
+
+    private static World vaultCycleStartWorld(Event event) {
+        if (!(event instanceof BlockEvent blockEvent)) return null;
+        try {
+            String current = String.valueOf(event.getClass().getMethod("getCurrentState").invoke(event));
+            String next = String.valueOf(event.getClass().getMethod("getNewState").invoke(event));
+            if (current.equals("INACTIVE") && next.equals("ACTIVE") || next.equals("UNLOCKING")) {
+                return blockEvent.getBlock().getWorld();
+            }
+        } catch (ReflectiveOperationException unavailable) {
+            // Leave the vault untouched if Paper changes the event shape.
         }
         return null;
     }

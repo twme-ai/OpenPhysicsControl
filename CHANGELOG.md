@@ -6,6 +6,8 @@
 - Restored `fire-damage`, `freeze-damage`, `drowning-damage`, and `fall-damage` control over blockless damage that Paper 26.3 reports as `CUSTOM`, such as `/damage … minecraft:in_fire`, by falling back to the damage type.
 - Extended `hanging-entity-detachment` to 26.3 cushions, which Paper reports through `EntityBreakEvent` instead of `HangingBreakEvent`.
 - Added `entity-collisions` for Paper's new entity-to-entity push event and `mob-construction` for snow golem, iron golem, copper golem, and Wither patterns.
+- `vertical-plant-growth` now also holds the random-tick age of sugar cane and cactus, which previously kept counting up to 15 while growth was stopped, and classifies 26.3 cactus flowers instead of treating them as crops.
+- Added `trial-vaults` to refuse trial key insertion before the key is consumed, keep inactive vaults from activating (Paper), and stop display-item cycling.
 - Moved the Mineflayer suite to Paper 26.3 through a ViaVersion/ViaBackwards-bridged 26.1 client, with a test-only server-side block-use driver; 26.1.2 and 1.21.11 remain selectable targets.
 - Added broad player block interaction controls with per-material overrides.
 - Added player entity interaction and vehicle-entry controls.

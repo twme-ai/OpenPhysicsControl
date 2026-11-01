@@ -13,7 +13,7 @@ OpenPhysicsControl 是從零撰寫、採 MIT 授權的 Bukkit 世界物理控制
 
 ## 功能
 
-88 項規則可按世界獨立控制，涵蓋方塊與流體、火焰與氣候、植物生長、實體物理、玩家互動、紅石以及自動化方塊。實驗性情境控制可停止玩家右鍵方塊、玩家操作或乘坐實體、展示框、畫與 26.3 坐墊脫落、床與重生錨的方塊來源爆炸、新放置方塊的初始連接，並以單一規則控制嗅探獸蛋完整孵化。預設值位於 `plugins/OpenPhysicsControl/default-rules.yml`，各世界狀態儲存在 `plugins/OpenPhysicsControl/worlds/<世界名稱>.yml`。設計與設定範例見 [`docs/scenario-controls.md`](docs/scenario-controls.md)，完整事件來源及測試狀態見 [`docs/physics-matrix.md`](docs/physics-matrix.md)。
+89 項規則可按世界獨立控制，涵蓋方塊與流體、火焰與氣候、植物生長、實體物理、玩家互動、紅石以及自動化方塊。實驗性情境控制可停止玩家右鍵方塊、玩家操作或乘坐實體、展示框、畫與 26.3 坐墊脫落、床與重生錨的方塊來源爆炸、新放置方塊的初始連接，並以單一規則控制嗅探獸蛋完整孵化。預設值位於 `plugins/OpenPhysicsControl/default-rules.yml`，各世界狀態儲存在 `plugins/OpenPhysicsControl/worlds/<世界名稱>.yml`。設計與設定範例見 [`docs/scenario-controls.md`](docs/scenario-controls.md)，完整事件來源及測試狀態見 [`docs/physics-matrix.md`](docs/physics-matrix.md)。
 
 `/opc` 開啟三列固定位置的物理分類選單，選擇分類後才會顯示該組規則；分類布局延續舊版熟悉的互動、建造、重力與流體、世界、生長區域，並加入機械分類。亦可使用 `/openphysics`、`/ophysics` 或 `/pc`。其他指令：
 
@@ -35,7 +35,9 @@ OP 仍可修改所有世界。若玩家同時擁有 `openphysicscontrol.set` 與
 
 指令狀態以規則行為為準：大多數規則的 `on` 代表物理正常運作、`off` 代表停止；`block-hit-projectile-removal` 則是相容舊版的可選清理，`on` 時會移除命中方塊的箭矢與三叉戟，預設 `off` 以保留原版箭矢留存。
 
-`entity-collisions` 使用 Paper 26.3 新增的 `EntityCollideWithEntityEvent`，`off` 會讓生物、玩家等實體不再被彼此推開；Spigot 沒有對應事件，該規則在 Spigot 上不生效並於啟動時記錄警告。客戶端仍可能自行預測玩家推擠，需搭配隊伍碰撞規則才能完全消除畫面上的推擠。`mob-construction` 控制以方塊結構建造雪人、鐵魔像、銅魔像與凋零怪；`off` 時結構方塊會保留，不會生成生物。
+`entity-collisions` 使用 Paper 26.3 新增的 `EntityCollideWithEntityEvent`，`off` 會讓生物、玩家等實體不再被彼此推開；Spigot 沒有對應事件，該規則在 Spigot 上不生效並於啟動時記錄警告。客戶端仍可能自行預測玩家推擠，需搭配隊伍碰撞規則才能完全消除畫面上的推擠。`mob-construction` 控制以方塊結構建造雪人、鐵魔像、銅魔像與凋零怪；`off` 時結構方塊會保留，不會生成生物。`trial-vaults` 控制試煉寶庫：`off` 時插入試煉鑰匙會被拒絕且鑰匙不會被消耗，展示物品停止輪替；在 Paper 上，未啟動的寶庫也不會因玩家靠近而啟動。已在開啟或吐出獎勵途中的寶庫會完成該次流程，避免鑰匙被吞掉。
+
+`vertical-plant-growth` `off` 時，除了不再長高外，甘蔗與仙人掌由隨機刻累加的 age 也會停在原值；指令直接設定 age 不受影響。
 
 `oxygen-depletion` 的 `off` 只會阻止水中氧氣減少，離水後仍會恢復氧氣；`drowning-damage` 是獨立規則。`fire-damage` 不會攔截仙人掌、甜莓叢或尖滴水石等一般接觸傷害，這些不屬於火焰與高溫控制範圍。
 
