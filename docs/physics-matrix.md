@@ -1,6 +1,6 @@
 # Minecraft physics coverage
 
-This audit defines "physics" as autonomous world simulation, physical entity effects, and block-machine processing that can be controlled through Bukkit event surfaces. Most rows use portable Bukkit events; hanging mangrove propagules use a narrowly scoped post-change rollback gated by the verified server random-tick call origin. The inventory was derived from the Paper 26.2 and Spigot 26.2 API event classes under `block`, `world`, `weather`, relevant `entity`, and `inventory` packages.
+This audit defines "physics" as autonomous world simulation, physical entity effects, and block-machine processing that can be controlled through Bukkit event surfaces. Most rows use portable Bukkit events; hanging mangrove propagules use a narrowly scoped post-change rollback gated by the verified server random-tick call origin. The inventory was derived from the Paper 26.3 and Spigot 26.3 API event classes under `block`, `world`, `weather`, relevant `entity`, and `inventory` packages.
 
 It intentionally excludes block break and general placement protection, inventory item movement, commands and custom plugin mutations, client-side collision prediction, chunk generation, and mob AI movement for which Spigot has no portable cancellable event. Placement-time structural connections are the narrow placement exception. Broad, opt-in-configurable player block/entity interaction surfaces cover the reference scenario list without duplicating one rule per block. All rules are enabled by default; the legacy-compatible block-hit arrow/trident cleanup is intentionally disabled by default.
 
@@ -8,7 +8,7 @@ Evidence codes:
 
 - **MF**: positive and negative behavior observed by Mineflayer on a real Paper server.
 - **UT**: material/reason routing covered by a unit test.
-- **API**: handler is bound to the listed Bukkit event and compiled against both Paper and Spigot 26.2; deterministic black-box coverage is not yet available.
+- **API**: handler is bound to the listed Bukkit event and compiled against both Paper and Spigot 26.3; deterministic black-box coverage is not yet available.
 
 ## Per-material overrides
 
@@ -98,11 +98,12 @@ Two event surfaces have dedicated behavior. `explosion-block-damage` evaluates e
 | `natural-mob-spawning` | `CreatureSpawnEvent` with `NATURAL` reason | Natural mob spawning only; commands, spawners, breeding, buckets, and plugins remain allowed | API |
 | `spawner-mob-spawning` | `SpawnerSpawnEvent`, `TrialSpawnerSpawnEvent`, `CreatureSpawnEvent` with `SPAWNER`/`TRIAL_SPAWNER` reasons | Standard and trial spawner output; natural, command, breeding, bucket, and plugin spawns remain allowed | MF, UT, API |
 | `mob-breeding` | `EntityEnterLoveModeEvent`, `EntityBreedEvent` | Entry into love mode and animal breeding completion | API |
+| `mob-construction` | `CreatureSpawnEvent` with `BUILD_SNOWMAN`, `BUILD_IRONGOLEM`, `BUILD_COPPERGOLEM`, or `BUILD_WITHER` reasons | Golems and the Wither built from block patterns; the pattern blocks remain when stopped | MF, UT |
 | `mob-transform` | `EntityTransformEvent`, runtime-selected `CubeMobSplitEvent`/`SlimeSplitEvent` and `EntityZapEvent`/`PigZapEvent`, `CreeperPowerEvent`, `SheepRegrowWoolEvent` | Replacement transformations, cube-mob splitting, lightning state changes, and wool regrowth | API |
 | `beehive-entry` | `EntityEnterBlockEvent` | Bees entering nests and hives | API |
 | `item-despawn` | `ItemDespawnEvent` | Dropped item expiry | API |
 | `item-merge` | `ItemMergeEvent` | Nearby dropped-item stack merging | API |
-| `hanging-entity-detachment` | `HangingBreakEvent` | Item frame, glow item frame, and painting removal after support loss, obstruction, explosions, or entity removal | MF |
+| `hanging-entity-detachment` | `HangingBreakEvent`, runtime-selected Paper `EntityBreakEvent` | Item frame, glow item frame, painting, leash knot, and 26.3 cushion removal after support loss, obstruction, explosions, or entity removal; cushions require Paper because Spigot has no event for non-hanging block-attached entities | MF |
 | `projectile-launch` | `ProjectileLaunchEvent` | Arrows, tridents, potions, pearls, fireworks, and other projectile launches | API |
 | `block-hit-projectile-removal` | `ProjectileHitEvent` | Removes arrows and tridents after they hit a block when enabled; disabled by default to preserve vanilla persistence | MF |
 | `entity-combust` | `EntityCombustEvent` and subclasses | Entity ignition by sun, blocks, and entities | API |
@@ -110,9 +111,10 @@ Two event surfaces have dedicated behavior. `explosion-block-damage` evaluates e
 | `knockback` | Paper or Bukkit knockback event selected at runtime | Entity knockback; uses Paper's current event without linking it on Spigot | API |
 | `drowning-damage` | `EntityDamageEvent` | Drowning damage without changing air mechanics | UT |
 | `oxygen-depletion` | `EntityAirChangeEvent` | Reductions in living entities' remaining air only; air recovery after leaving water remains enabled | MF, UT |
-| `fire-damage` | `EntityDamageEvent`, `EntityDamageByBlockEvent` | Fire, burning, lava, snow-golem melting, magma blocks, campfires, and soul campfires; unrelated contact damage remains enabled | MF, UT |
-| `freeze-damage` | `EntityDamageEvent` with `FREEZE` cause | Powder-snow freezing damage | MF, UT |
+| `fire-damage` | `EntityDamageEvent`, `EntityDamageByBlockEvent` | Fire, burning, lava, snow-golem melting, magma blocks, campfires, and soul campfires; unrelated contact damage remains enabled. Blockless damage that Paper 26.3 reports as `CUSTOM` is classified by its damage type | MF, UT |
+| `freeze-damage` | `EntityDamageEvent` with `FREEZE` cause or `freeze` damage type | Powder-snow freezing damage | MF, UT |
 | `vehicle-entity-collision` | `VehicleEntityCollisionEvent` | Server-side boat and minecart collisions with entities, including collision push/mount behavior; vehicle-block collision is unaffected | API |
+| `entity-collisions` | runtime-selected Paper 26.3 `EntityCollideWithEntityEvent` | Server-side pushing between colliding entities. Paper only; clients may still predict their own player push unless team collision rules are also used | MF |
 | `hunger` | `EntityExhaustionEvent`, `FoodLevelChangeEvent` | Player exhaustion accumulation and food-level changes | API |
 | `natural-regen` | `EntityRegainHealthEvent` | Saturation and natural regeneration; potions and custom healing remain allowed | API |
 
@@ -131,7 +133,7 @@ Two event surfaces have dedicated behavior. `explosion-block-damage` evaluates e
 
 ## Mineflayer boundary
 
-[Mineflayer 4.37.1](https://github.com/PrismarineJS/mineflayer) officially supports Minecraft through 1.21.11, not 26.2. The black-box suite therefore runs the same plugin JAR on Paper 1.21.11 build 132 and observes block state over the real protocol. Paper/Spigot 26.2 compilation and Paper/Folia runtime tests cover the current server API separately. When Mineflayer adds 26.2 protocol data, only `TEST_VERSION`, the pinned Paper build, URL, and checksum in `tests/mineflayer/run.mjs` need updating.
+[Mineflayer 4.39.0](https://github.com/PrismarineJS/mineflayer) officially supports Minecraft through 26.1, not 26.3. The default black-box target therefore runs Paper 26.3 build 235 with ViaVersion and ViaBackwards 5.12.2 bridging a 26.1 client. The bridge rejects the client's movement packets and drops its use-item-on packet, so the 26.3 target moves the bot only by command and performs block right-clicks through the test-only `OpenPhysicsControlTestDriver` plugin, which invokes the same server-side `ServerPlayerGameMode.useItemOn` path as the packet handler. `OPC_TEST_TARGET=26.1.2` runs the same suite with a direct 26.1 client and real interaction packets, and `OPC_TEST_TARGET=1.21.11` keeps the previous baseline. When Mineflayer adds 26.3 protocol data, add a direct target to `TARGETS` in `tests/mineflayer/run.mjs`.
 
 Mineflayer cannot reliably observe server-only cancellation such as breeding completion, cauldron reasons, or inventory process events without slow random-tick scenarios. Those remain classified as API coverage rather than being overstated as black-box verified.
 
@@ -147,5 +149,6 @@ The following surfaces were inspected but are not presented as world-physics rul
 | Generic combat/effects | attacks, potions, poison, magic, armor, death, resurrection | Gameplay/combat scope. Only environmental fall, drowning, fire/heat, freezing, and knockback controls are included. |
 | Explicit travel and posture | player teleport, portal entry, swimming/gliding toggles | Direct entity/player action rather than autonomous world simulation; vehicle mounting and portal *creation* are covered separately. |
 | Chunk generation and data packs | terrain noise, carvers, structures generated with chunks | Occurs during generation rather than runtime physics and cannot be reversed safely by an event cancellation plugin. |
-| Paper-only mechanics | `EntityMoveEvent`, `EntityInsideBlockEvent`, compost and dragon-egg Paper events | Excluded from the shared core where no equivalent Spigot 26.2 event exists. Portable Bukkit fallbacks are used when available. |
+| Paper-only mechanics | `EntityMoveEvent`, `EntityInsideBlockEvent`, compost and dragon-egg Paper events | Excluded from the shared core where no equivalent Spigot 26.3 event exists. Portable Bukkit fallbacks are used when available; `entity-collisions` and cushion detachment are the documented Paper-only exceptions. |
+| Non-cancellable 26.3 Paper events | `EntityPotentSulfurLaunchEvent`, `ItemTransportingEntitySortEvent`, `PrepareHopperTransferEvent` | Potent sulfur geyser launches cannot be cancelled and expose only a read-only velocity; copper golem sorting is item logistics rather than physics; hopper transfers are already controlled by `hoppers`. |
 | Pure presentation | sounds, particles, block display state, maps, signs | No physical state transition. Bell and note-block activation are included because they are redstone-driven machine outputs. |

@@ -2,6 +2,11 @@
 
 ## 2.8.0-SNAPSHOT
 
+- Updated the build to Paper `26.3.build.235-stable` and Spigot `26.3-R0.1-SNAPSHOT`, and aligned the shaded MiniMessage with Paper 26.3's Adventure 5.2.0.
+- Restored `fire-damage`, `freeze-damage`, `drowning-damage`, and `fall-damage` control over blockless damage that Paper 26.3 reports as `CUSTOM`, such as `/damage … minecraft:in_fire`, by falling back to the damage type.
+- Extended `hanging-entity-detachment` to 26.3 cushions, which Paper reports through `EntityBreakEvent` instead of `HangingBreakEvent`.
+- Added `entity-collisions` for Paper's new entity-to-entity push event and `mob-construction` for snow golem, iron golem, copper golem, and Wither patterns.
+- Moved the Mineflayer suite to Paper 26.3 through a ViaVersion/ViaBackwards-bridged 26.1 client, with a test-only server-side block-use driver; 26.1.2 and 1.21.11 remain selectable targets.
 - Added broad player block interaction controls with per-material overrides.
 - Added player entity interaction and vehicle-entry controls.
 - Added hanging entity detachment controls for item frames and paintings.

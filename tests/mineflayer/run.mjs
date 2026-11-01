@@ -10,16 +10,58 @@ import { pipeline } from 'node:stream/promises'
 import mineflayer from 'mineflayer'
 import { Vec3 } from 'vec3'
 
-const TEST_VERSION = '1.21.11'
-const PAPER_BUILD = 132
-const PAPER_SHA256 = '5ffef465eeeb5f2a3c23a24419d97c51afd7dbb4923ff42df9a3f58bba1ccfba'
-const PAPER_URL = 'https://fill-data.papermc.io/v1/objects/5ffef465eeeb5f2a3c23a24419d97c51afd7dbb4923ff42df9a3f58bba1ccfba/paper-1.21.11-132.jar'
+// Mineflayer 4.39 speaks at most 26.1, so the 26.3 target bridges that client with ViaVersion/ViaBackwards.
+const TARGETS = {
+  '26.3': {
+    server: '26.3',
+    build: 235,
+    client: '26.1',
+    // Cushions and Paper's EntityCollideWithEntityEvent first appear in 26.3.
+    features: ['cushions', 'entity-collision-event'],
+    sha256: '4ebaf5c9da98c654bb8f17245799943dfb05a285830be4307bfdf7bc9ca024bf',
+    url: 'https://fill-data.papermc.io/v1/objects/4ebaf5c9da98c654bb8f17245799943dfb05a285830be4307bfdf7bc9ca024bf/paper-26.3-235.jar',
+    plugins: [
+      {
+        name: 'ViaVersion-5.12.2.jar',
+        url: 'https://cdn.modrinth.com/data/P1OZGk5p/versions/Fkfcr89K/ViaVersion-5.12.2.jar',
+        sha512: 'c6af11f50e14bc1ba239f5a90be653cce85feee30c473a4b53336b4d5527d790369cf43843f7cb06d3ac3a34fc207e7203436737ca719070644101472453401b'
+      },
+      {
+        name: 'ViaBackwards-5.12.2.jar',
+        url: 'https://cdn.modrinth.com/data/NpvuJQoq/versions/WFO37e8T/ViaBackwards-5.12.2.jar',
+        sha512: '78bc7e5fd33ecf13aee31c62e1de46a854e066a1936f294347c6798371357497fe2cc6f23f1d42003ad3050f94ac5382db95e60ffa90d765fada0322b59b0ef9'
+      }
+    ]
+  },
+  '26.1.2': {
+    server: '26.1.2',
+    build: 74,
+    client: '26.1',
+    sha256: '1d70b1dab9cf4a6de615209a536f3a45a2186240253c428213ce2188ab95e5f7',
+    url: 'https://fill-data.papermc.io/v1/objects/1d70b1dab9cf4a6de615209a536f3a45a2186240253c428213ce2188ab95e5f7/paper-26.1.2-74.jar',
+    plugins: []
+  },
+  '1.21.11': {
+    server: '1.21.11',
+    build: 132,
+    client: '1.21.11',
+    sha256: '5ffef465eeeb5f2a3c23a24419d97c51afd7dbb4923ff42df9a3f58bba1ccfba',
+    url: 'https://fill-data.papermc.io/v1/objects/5ffef465eeeb5f2a3c23a24419d97c51afd7dbb4923ff42df9a3f58bba1ccfba/paper-1.21.11-132.jar',
+    plugins: []
+  }
+}
+const target = TARGETS[process.env.OPC_TEST_TARGET ?? '26.3']
+assert.ok(target, `Unknown OPC_TEST_TARGET ${process.env.OPC_TEST_TARGET}; expected ${Object.keys(TARGETS).join(' or ')}`)
+const bridged = target.plugins.length > 0
+const supports = feature => target.features?.includes(feature) ?? false
 const PORT = Number(process.env.OPC_TEST_PORT ?? 25578)
 const configuredServerDirectory = process.env.OPC_TEST_SERVER_DIR
 const here = dirname(fileURLToPath(import.meta.url))
 const project = resolve(here, '../..')
 const pluginJar = join(project, 'build/libs/OpenPhysicsControl.jar')
-const paperCache = join(project, 'build/test-servers', `paper-${TEST_VERSION}-${PAPER_BUILD}.jar`)
+const driverJar = join(project, 'build/test-driver/OpenPhysicsControlTestDriver.jar')
+const testServers = join(project, 'build/test-servers')
+const paperCache = join(testServers, `paper-${target.server}-${target.build}.jar`)
 const java = process.env.JAVA_HOME ? join(process.env.JAVA_HOME, 'bin/java') : 'java'
 
 let server
@@ -30,24 +72,31 @@ function delay (milliseconds) {
   return new Promise(resolve => setTimeout(resolve, milliseconds))
 }
 
-async function sha256 (path) {
-  const hash = createHash('sha256')
+async function digest (algorithm, path) {
+  const hash = createHash(algorithm)
   const stream = (await import('node:fs')).createReadStream(path)
   for await (const chunk of stream) hash.update(chunk)
   return hash.digest('hex')
 }
 
-async function ensurePaper () {
-  await mkdir(dirname(paperCache), { recursive: true })
+async function download (url, path, algorithm, expected) {
+  await mkdir(dirname(path), { recursive: true })
   try {
-    if (await sha256(paperCache) === PAPER_SHA256) return
+    if (await digest(algorithm, path) === expected) return
   } catch {
     // Cache miss.
   }
-  const response = await fetch(PAPER_URL)
-  assert.equal(response.ok, true, `Paper download failed: ${response.status}`)
-  await pipeline(response.body, createWriteStream(paperCache))
-  assert.equal(await sha256(paperCache), PAPER_SHA256, 'Paper checksum mismatch')
+  const response = await fetch(url)
+  assert.equal(response.ok, true, `Download of ${url} failed: ${response.status}`)
+  await pipeline(response.body, createWriteStream(path))
+  assert.equal(await digest(algorithm, path), expected, `Checksum mismatch for ${url}`)
+}
+
+async function ensurePaper () {
+  await download(target.url, paperCache, 'sha256', target.sha256)
+  for (const plugin of target.plugins) {
+    await download(plugin.url, join(testServers, plugin.name), 'sha512', plugin.sha512)
+  }
 }
 
 async function waitForServer (pattern, timeout = 120000) {
@@ -104,6 +153,35 @@ async function expectServerBlockState (position, expected, message) {
     await response
   } catch {
     throw new Error(`${message}: expected minecraft:${expected} at ${position.join(',')}`)
+  }
+}
+
+const BLOCK_FACES = new Map([
+  ['0,1,0', 'up'], ['0,-1,0', 'down'], ['0,0,-1', 'north'],
+  ['0,0,1', 'south'], ['-1,0,0', 'west'], ['1,0,0', 'east']
+])
+
+// Right-clicks a block face with the bot's main hand. ViaBackwards drops the bridged client's use-item-on
+// packet, so bridged targets run the identical server-side interaction through the test driver plugin.
+async function useBlock (position, face = new Vec3(0, 1, 0)) {
+  if (!bridged) {
+    await bot.activateBlock(await block(...position), face)
+    return
+  }
+  const side = BLOCK_FACES.get(`${face.x},${face.y},${face.z}`)
+  assert.ok(side, `unsupported block face ${face}`)
+  await commands(`opctest use PhysicsBot ${position.join(' ')} ${side}`)
+}
+
+async function serverMatches (condition) {
+  const marker = `opc-server-check-${Date.now()}`
+  const response = nextChatMessage(new RegExp(marker), 2000)
+  command(`execute ${condition} run tellraw PhysicsBot {"text":"${marker}"}`)
+  try {
+    await response
+    return true
+  } catch {
+    return false
   }
 }
 
@@ -255,7 +333,7 @@ async function testLocalizedMenu () {
       slot: 3,
       title: /生物互動/,
       size: 18,
-      rules: [1, 2, 3, 4, 5, 6, 7]
+      rules: [0, 1, 2, 3, 5, 6, 7, 8]
     },
     {
       slot: 4,
@@ -267,7 +345,7 @@ async function testLocalizedMenu () {
       slot: 5,
       title: /實體效果/,
       size: 27,
-      rules: [1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 16]
+      rules: [0, 1, 2, 3, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16]
     },
     {
       slot: 11,
@@ -400,7 +478,7 @@ async function testPlacedBlockConnections () {
   let fence = bot.inventory.items().find(item => item.name === 'oak_fence')
   assert.ok(fence, 'oak fence was not given to the bot')
   await bot.equip(fence, 'hand')
-  await bot.activateBlock(await block(placed[0], placed[1] - 1, placed[2]), new Vec3(0, 1, 0))
+  await useBlock([placed[0], placed[1] - 1, placed[2]])
   await delay(500)
   await expectServerBlockState(placed, 'oak_fence[west=false]',
     'placed connection off: new fence connected to its neighbor')
@@ -415,7 +493,7 @@ async function testPlacedBlockConnections () {
   fence = bot.inventory.items().find(item => item.name === 'oak_fence')
   assert.ok(fence, 'second oak fence was not given to the bot')
   await bot.equip(fence, 'hand')
-  await bot.activateBlock(await block(placed[0], placed[1] - 1, placed[2]), new Vec3(0, 1, 0))
+  await useBlock([placed[0], placed[1] - 1, placed[2]])
   await delay(500)
   await expectServerBlockState(placed, 'oak_fence[west=true]',
     'placed connection on: new fence did not connect to its neighbor')
@@ -442,13 +520,13 @@ async function testPlayerBlockInteractions () {
     'setblock 3 100 3 minecraft:stone',
     'setblock 3 101 3 minecraft:lever[face=floor,facing=north,powered=false]'
   )
-  await bot.activateBlock(await block(...position))
+  await useBlock(position)
   await delay(400)
   assert.equal(String((await block(...position)).getProperties().powered), 'false',
     'lever material interaction off: player toggled the lever')
 
   await commands('opc material player-block-interactions lever on world')
-  await bot.activateBlock(await block(...position))
+  await useBlock(position)
   await delay(400)
   assert.equal(String((await block(...position)).getProperties().powered), 'true',
     'lever material interaction on: player could not toggle the lever')
@@ -492,7 +570,7 @@ async function testHangingEntityDetachment () {
     const frameItem = bot.inventory.items().find(item => item.name === 'item_frame')
     assert.ok(frameItem, 'Mineflayer did not receive an item frame')
     await bot.equip(frameItem, 'hand')
-    await bot.activateBlock(await block(6, 102, 0), new Vec3(0, 0, 1))
+    await useBlock([6, 102, 0], new Vec3(0, 0, 1))
     await delay(500)
     assert.ok(nearbyEntities('item_frame').length > 0, 'test item frame was not created')
     await commands('setblock 6 102 0 air')
@@ -513,6 +591,81 @@ async function testHangingEntityDetachment () {
   console.log('PASS hanging-entity-detachment')
 }
 
+async function testCushionDetachment () {
+  if (!supports('cushions')) return console.log(`SKIP cushions do not exist on ${target.server}`)
+  async function unsupportedCushion () {
+    await commands(
+      'kill @e[type=minecraft:cushion]',
+      'setblock 10 100 -4 minecraft:stone',
+      'summon minecraft:cushion 10.5 101 -3.5'
+    )
+    await delay(300)
+    assert.ok(await serverMatches('if entity @e[type=minecraft:cushion]'), 'test cushion was not created')
+    await commands('setblock 10 100 -4 air')
+    // Block-attached entities validate support every 100 server ticks.
+    await delay(6200)
+    return serverMatches('if entity @e[type=minecraft:cushion]')
+  }
+
+  await commands('opc set hanging-entity-detachment off world')
+  assert.equal(await unsupportedCushion(), true, 'hanging entity detachment off: unsupported cushion was removed')
+  await commands('opc set hanging-entity-detachment on world')
+  assert.equal(await unsupportedCushion(), false, 'hanging entity detachment on: unsupported cushion remained')
+  await commands('kill @e[type=minecraft:cushion]', 'kill @e[type=minecraft:item]')
+  console.log('PASS hanging-entity-detachment for 26.3 cushions')
+}
+
+async function testEntityCollisions () {
+  if (!supports('entity-collision-event')) {
+    return console.log(`SKIP entity-collisions has no event on Paper ${target.server}`)
+  }
+  // Zero movement speed keeps the AI from walking while collisions may still push the pigs apart.
+  const pig = tag => `{Tags:["${tag}"],Invulnerable:1b,attributes:[{id:"minecraft:movement_speed",base:0.0d}]}`
+  async function pigsStayOverlapped () {
+    await commands(
+      'kill @e[type=minecraft:pig]',
+      `summon minecraft:pig 22.5 100 -5.5 ${pig('opc-push-a')}`,
+      `summon minecraft:pig 22.55 100 -5.5 ${pig('opc-push-b')}`
+    )
+    await delay(1500)
+    return serverMatches('as @e[tag=opc-push-a] at @s if entity @e[tag=opc-push-b,distance=..0.3]')
+  }
+
+  await commands('opc set entity-collisions off world')
+  assert.equal(await pigsStayOverlapped(), true, 'entity collisions off: overlapping pigs were pushed apart')
+  await commands('opc set entity-collisions on world')
+  assert.equal(await pigsStayOverlapped(), false, 'entity collisions on: overlapping pigs were not pushed apart')
+  await commands('kill @e[type=minecraft:pig]')
+  console.log('PASS entity-collisions')
+}
+
+async function testMobConstruction () {
+  async function buildSnowGolem () {
+    await commands(
+      'kill @e[type=minecraft:snow_golem]',
+      'setblock 12 100 -5 minecraft:snow_block',
+      'setblock 12 101 -5 minecraft:snow_block',
+      'setblock 12 102 -5 air',
+      'setblock 12 102 -5 minecraft:carved_pumpkin'
+    )
+    await delay(500)
+  }
+
+  await commands('opc set mob-construction off world')
+  await buildSnowGolem()
+  assert.equal(await serverMatches('if entity @e[type=minecraft:snow_golem]'), false,
+    'mob construction off: a snow golem was built')
+  await expectServerBlockState([12, 102, -5], 'carved_pumpkin', 'mob construction off: the pattern was consumed')
+
+  await commands('opc set mob-construction on world')
+  await buildSnowGolem()
+  assert.equal(await serverMatches('if entity @e[type=minecraft:snow_golem]'), true,
+    'mob construction on: no snow golem was built')
+  await expectServerBlockState([12, 102, -5], 'air', 'mob construction on: the pattern was not consumed')
+  await commands('kill @e[type=minecraft:snow_golem]', 'fill 12 100 -5 12 102 -5 air')
+  console.log('PASS mob-construction')
+}
+
 async function testBlockOriginExplosions () {
   const position = [3, 100, 3]
   await commands(
@@ -523,7 +676,7 @@ async function testBlockOriginExplosions () {
     'setblock 3 100 3 minecraft:respawn_anchor[charges=1]'
   )
   await bot.unequip('hand')
-  await bot.activateBlock(await block(...position))
+  await useBlock(position)
   await delay(700)
   await expectBlock(position, 'respawn_anchor', 'block-origin explosions off')
 
@@ -531,7 +684,7 @@ async function testBlockOriginExplosions () {
     'opc set block-origin-explosions on world',
     'setblock 3 100 3 minecraft:respawn_anchor[charges=1]'
   )
-  await bot.activateBlock(await block(...position))
+  await useBlock(position)
   await delay(700)
   await expectBlock(position, 'air', 'block-origin explosions on')
   await resetArea()
@@ -762,7 +915,7 @@ async function testEndPortalFrameFilling () {
     'setblock 2 101 0 minecraft:end_portal_frame[facing=north,eye=false]'
   )
   await equipEnderEye()
-  await bot.activateBlock(await block(...position))
+  await useBlock(position)
   await delay(500)
   assert.equal(String((await block(...position)).getProperties().eye), 'false',
     'end portal frame filling off: Eye of Ender was inserted')
@@ -772,7 +925,7 @@ async function testEndPortalFrameFilling () {
     'setblock 2 101 0 minecraft:end_portal_frame[facing=north,eye=false]'
   )
   await equipEnderEye()
-  await bot.activateBlock(await block(...position))
+  await useBlock(position)
   await delay(500)
   assert.equal(String((await block(...position)).getProperties().eye), 'true',
     'end portal frame filling on: Eye of Ender was not inserted')
@@ -793,14 +946,14 @@ async function testGlowBerryPicking () {
   await commands('clear PhysicsBot', 'opc set glow-berry-picking off world')
   await bot.unequip('hand')
   await ripeVine()
-  await bot.activateBlock(await block(...position))
+  await useBlock(position)
   await delay(500)
   assert.equal(String((await block(...position)).getProperties().berries), 'true',
     'glow berry picking off: ripe cave vines were harvested')
 
   await commands('opc set glow-berry-picking on world')
   await ripeVine()
-  await bot.activateBlock(await block(...position))
+  await useBlock(position)
   await delay(500)
   assert.equal(String((await block(...position)).getProperties().berries), 'false',
     'glow berry picking on: ripe cave vines were not harvested')
@@ -967,6 +1120,7 @@ async function testFireAndFreezeDamage () {
 
 async function start () {
   await stat(pluginJar)
+  if (bridged) await stat(driverJar)
   await ensurePaper()
   const serverDir = configuredServerDirectory
     ? resolve(configuredServerDirectory)
@@ -981,9 +1135,15 @@ async function start () {
   await writeFile(join(serverDir, 'plugins/PhysicsControl/config.yml'), 'world_nether:\n  WHEAT_GROWING: false\n')
   await copyFile(pluginJar, join(serverDir, 'plugins/OpenPhysicsControl.jar'))
   await copyFile(paperCache, join(serverDir, 'paper.jar'))
+  for (const plugin of target.plugins) {
+    await copyFile(join(testServers, plugin.name), join(serverDir, 'plugins', plugin.name))
+  }
+  if (bridged) await copyFile(driverJar, join(serverDir, 'plugins/OpenPhysicsControlTestDriver.jar'))
   await writeFile(join(serverDir, 'eula.txt'), 'eula=true\n')
   await writeFile(join(serverDir, 'server.properties'), [
     'online-mode=false',
+    // Vanilla 26.3 enables the allowlist by default.
+    'white-list=false',
     `server-port=${PORT}`,
     'gamemode=creative',
     'difficulty=peaceful',
@@ -1021,8 +1181,16 @@ async function start () {
     port: PORT,
     username: 'PhysicsBot',
     auth: 'offline',
-    version: TEST_VERSION
+    version: target.client
   })
+  if (bridged) {
+    // The bridged client's movement packets fail server validation; the suite moves the bot only by command.
+    const write = bot._client.write.bind(bot._client)
+    const movement = new Set(['position', 'look', 'position_look', 'flying'])
+    bot._client.write = (name, params) => {
+      if (!movement.has(name)) write(name, params)
+    }
+  }
   bot.on('kicked', reason => console.error('Mineflayer kicked:', reason))
   bot.on('error', error => console.error('Mineflayer error:', error))
   await new Promise((resolve, reject) => {
@@ -1036,32 +1204,44 @@ async function start () {
   await bot.waitForChunksToLoad()
   await resetArea()
 
-  await testLocalizedMenu()
-  await testGravity()
-  await testMaterialOverrides()
-  await testPlacedBlockConnections()
-  await testPlayerBlockInteractions()
-  await testPlayerEntityInteractions()
-  await testHangingEntityDetachment()
-  await testBlockOriginExplosions()
-  await testWaterFlow()
-  await testLavaFlow()
-  await testFluidReactions()
-  await testBlockUpdates()
-  await testSpongeAbsorption()
-  await testTntPriming()
-  await testRedstone()
-  await testPistons()
-  await testHangingMangroveMaturation()
-  await testEndPortalFrameFilling()
-  await testGlowBerryPicking()
-  await testBlockHitProjectileRemoval()
-  await testSpawnerMobSpawning()
-  await testOxygenDepletion()
-  await testFireAndFreezeDamage()
-  await testEntityExplosionPrime()
-  await testExplosionDamage()
-  console.log(`PASS Mineflayer suite on Paper ${TEST_VERSION} build ${PAPER_BUILD}`)
+  const suite = [
+    testLocalizedMenu,
+    testGravity,
+    testMaterialOverrides,
+    testPlacedBlockConnections,
+    testPlayerBlockInteractions,
+    testPlayerEntityInteractions,
+    testHangingEntityDetachment,
+    testCushionDetachment,
+    testEntityCollisions,
+    testMobConstruction,
+    testBlockOriginExplosions,
+    testWaterFlow,
+    testLavaFlow,
+    testFluidReactions,
+    testBlockUpdates,
+    testSpongeAbsorption,
+    testTntPriming,
+    testRedstone,
+    testPistons,
+    testHangingMangroveMaturation,
+    testEndPortalFrameFilling,
+    testGlowBerryPicking,
+    testBlockHitProjectileRemoval,
+    testSpawnerMobSpawning,
+    testOxygenDepletion,
+    testFireAndFreezeDamage,
+    testEntityExplosionPrime,
+    testExplosionDamage
+  ]
+  // OPC_TEST_ONLY=testGravity,testPistons runs a subset while debugging.
+  const only = process.env.OPC_TEST_ONLY?.split(',').map(name => name.trim()).filter(Boolean)
+  for (const test of suite) {
+    if (!only || only.includes(test.name)) await test()
+  }
+  if (only) return
+  console.log(`PASS Mineflayer suite on Paper ${target.server} build ${target.build}`
+    + (bridged ? ` via a ${target.client} client bridged by ViaVersion/ViaBackwards` : ''))
 }
 
 async function stop () {

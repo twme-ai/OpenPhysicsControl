@@ -23,29 +23,31 @@ public final class LocaleService {
     private static final String FALLBACK = "en";
     private static final Set<String> BUNDLED = Set.of("en", "zh_tw");
     private static final Map<String, Map<String, Set<String>>> REPLACED_BUNDLED_VALUES = Map.of(
-        "en", Map.of(
-            "rule-changed", Set.of("<prefix> <gray><rule> in <world> is now <state>.</gray>"),
-            "state-on", Set.of("enabled", "Enabled", "<green>Enabled</green>"),
-            "state-off", Set.of("disabled", "Disabled", "<red>Disabled</red>"),
-            "menu-state-on", Set.of("<green>Enabled</green>"),
-            "menu-state-off", Set.of("<red>Disabled</red>"),
-            "group-blocks", Set.of("<dark_gray>Blocks and signals</dark_gray>"),
-            "group-climate", Set.of("<dark_gray>Fire, climate, and time</dark_gray>"),
-            "group-growth", Set.of("<dark_gray>Plants and growth</dark_gray>"),
-            "group-entities", Set.of("<dark_gray>Entities and players</dark_gray>"),
-            "group-machines", Set.of("<dark_gray>Machines and processing</dark_gray>")
+        "en", Map.ofEntries(
+            Map.entry("rule-changed", Set.of("<prefix> <gray><rule> in <world> is now <state>.</gray>")),
+            Map.entry("state-on", Set.of("enabled", "Enabled", "<green>Enabled</green>")),
+            Map.entry("state-off", Set.of("disabled", "Disabled", "<red>Disabled</red>")),
+            Map.entry("menu-state-on", Set.of("<green>Enabled</green>")),
+            Map.entry("menu-state-off", Set.of("<red>Disabled</red>")),
+            Map.entry("group-blocks", Set.of("<dark_gray>Blocks and signals</dark_gray>")),
+            Map.entry("group-climate", Set.of("<dark_gray>Fire, climate, and time</dark_gray>")),
+            Map.entry("group-growth", Set.of("<dark_gray>Plants and growth</dark_gray>")),
+            Map.entry("group-entities", Set.of("<dark_gray>Entities and players</dark_gray>")),
+            Map.entry("group-machines", Set.of("<dark_gray>Machines and processing</dark_gray>")),
+            Map.entry("rule-hanging-entity-detachment", Set.of("Item frame and painting detachment"))
         ),
-        "zh_tw", Map.of(
-            "rule-changed", Set.of("<prefix> <gray><world> 的 <rule> 現在是 <state>。</gray>"),
-            "state-on", Set.of("已啟用", "<green>已啟用</green>"),
-            "state-off", Set.of("已停用", "<red>已停用</red>"),
-            "menu-state-on", Set.of("<green>已啟用</green>"),
-            "menu-state-off", Set.of("<red>已停用</red>"),
-            "group-blocks", Set.of("<dark_gray>方塊與訊號</dark_gray>"),
-            "group-climate", Set.of("<dark_gray>火焰、氣候與時間</dark_gray>"),
-            "group-growth", Set.of("<dark_gray>植物與生長</dark_gray>"),
-            "group-entities", Set.of("<dark_gray>實體與玩家</dark_gray>"),
-            "group-machines", Set.of("<dark_gray>機械與處理</dark_gray>")
+        "zh_tw", Map.ofEntries(
+            Map.entry("rule-changed", Set.of("<prefix> <gray><world> 的 <rule> 現在是 <state>。</gray>")),
+            Map.entry("state-on", Set.of("已啟用", "<green>已啟用</green>")),
+            Map.entry("state-off", Set.of("已停用", "<red>已停用</red>")),
+            Map.entry("menu-state-on", Set.of("<green>已啟用</green>")),
+            Map.entry("menu-state-off", Set.of("<red>已停用</red>")),
+            Map.entry("group-blocks", Set.of("<dark_gray>方塊與訊號</dark_gray>")),
+            Map.entry("group-climate", Set.of("<dark_gray>火焰、氣候與時間</dark_gray>")),
+            Map.entry("group-growth", Set.of("<dark_gray>植物與生長</dark_gray>")),
+            Map.entry("group-entities", Set.of("<dark_gray>實體與玩家</dark_gray>")),
+            Map.entry("group-machines", Set.of("<dark_gray>機械與處理</dark_gray>")),
+            Map.entry("rule-hanging-entity-detachment", Set.of("展示框與畫脫落"))
         )
     );
 

@@ -86,6 +86,17 @@ final class PhysicsClassifierTest {
         assertEquals(Rule.FIRE_DAMAGE, PhysicsClassifier.damage(EntityDamageEvent.DamageCause.CAMPFIRE));
         assertEquals(Rule.FREEZE_DAMAGE, PhysicsClassifier.damage(EntityDamageEvent.DamageCause.FREEZE));
         assertNull(PhysicsClassifier.damage(EntityDamageEvent.DamageCause.CONTACT));
+        assertEquals(Rule.FIRE_DAMAGE, PhysicsClassifier.damageType("in_fire"));
+        assertEquals(Rule.FIRE_DAMAGE, PhysicsClassifier.damageType("on_fire"));
+        assertEquals(Rule.FIRE_DAMAGE, PhysicsClassifier.damageType("lava"));
+        assertEquals(Rule.FIRE_DAMAGE, PhysicsClassifier.damageType("hot_floor"));
+        assertEquals(Rule.FIRE_DAMAGE, PhysicsClassifier.damageType("campfire"));
+        assertEquals(Rule.FREEZE_DAMAGE, PhysicsClassifier.damageType("freeze"));
+        assertEquals(Rule.DROWNING_DAMAGE, PhysicsClassifier.damageType("drown"));
+        assertEquals(Rule.FALL_DAMAGE, PhysicsClassifier.damageType("fall"));
+        assertEquals(Rule.FALL_DAMAGE, PhysicsClassifier.damageType("falling_anvil"));
+        assertNull(PhysicsClassifier.damageType("cactus"));
+        assertNull(PhysicsClassifier.damageType("player_attack"));
         assertEquals(Rule.FIRE_DAMAGE, PhysicsClassifier.thermalContact(Material.MAGMA_BLOCK));
         assertEquals(Rule.FIRE_DAMAGE, PhysicsClassifier.thermalContact(Material.CAMPFIRE));
         assertNull(PhysicsClassifier.thermalContact(Material.CACTUS));

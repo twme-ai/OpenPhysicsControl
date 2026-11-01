@@ -71,6 +71,7 @@ natural-mob-spawning: true
 spawner-mob-spawning: true
 mob-breeding: true
 mob-transform: true
+mob-construction: true
 beehive-entry: true
 item-despawn: true
 item-merge: true
@@ -86,6 +87,7 @@ oxygen-depletion: true
 fire-damage: true
 freeze-damage: true
 vehicle-entity-collision: true
+entity-collisions: true
 hunger: true
 natural-regen: true
 

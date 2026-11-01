@@ -6,14 +6,14 @@ OpenPhysicsControl 是從零撰寫、採 MIT 授權的 Bukkit 世界物理控制
 
 ## 平台
 
-- Paper 26.2 / Java 25（以 `26.2.build.65-beta` 編譯及實機驗證）
-- Spigot 26.2 / Java 25（以 `26.2-R0.1-SNAPSHOT` 編譯驗證）
-- Folia：所有物理處理只存取事件所在 region，不建立全域排程工作，也不跨 region 操作玩家或實體；官方目前尚無 26.2，已在最新穩定版 26.1.2 build 8 完成載入、指令及乾淨停用驗證
+- Paper 26.3 / Java 25（以 `26.3.build.235-stable` 編譯，並在 Paper 26.3 build 235 以 Mineflayer 黑箱測試驗證）
+- Spigot 26.3 / Java 25（以 `26.3-R0.1-SNAPSHOT` 編譯驗證）
+- Folia：所有物理處理只存取事件所在 region，不建立全域排程工作，也不跨 region 操作玩家或實體；已在 Folia 26.3 build 6（alpha）完成載入、指令、重新載入及乾淨停用驗證
 - `plugin.yml` 維持 `api-version: '1.13'`
 
 ## 功能
 
-86 項規則可按世界獨立控制，涵蓋方塊與流體、火焰與氣候、植物生長、實體物理、玩家互動、紅石以及自動化方塊。實驗性情境控制可停止玩家右鍵方塊、玩家操作或乘坐實體、展示框與畫脫落、床與重生錨的方塊來源爆炸、新放置方塊的初始連接，並以單一規則控制嗅探獸蛋完整孵化。預設值位於 `plugins/OpenPhysicsControl/default-rules.yml`，各世界狀態儲存在 `plugins/OpenPhysicsControl/worlds/<世界名稱>.yml`。設計與設定範例見 [`docs/scenario-controls.md`](docs/scenario-controls.md)，完整事件來源及測試狀態見 [`docs/physics-matrix.md`](docs/physics-matrix.md)。
+88 項規則可按世界獨立控制，涵蓋方塊與流體、火焰與氣候、植物生長、實體物理、玩家互動、紅石以及自動化方塊。實驗性情境控制可停止玩家右鍵方塊、玩家操作或乘坐實體、展示框、畫與 26.3 坐墊脫落、床與重生錨的方塊來源爆炸、新放置方塊的初始連接，並以單一規則控制嗅探獸蛋完整孵化。預設值位於 `plugins/OpenPhysicsControl/default-rules.yml`，各世界狀態儲存在 `plugins/OpenPhysicsControl/worlds/<世界名稱>.yml`。設計與設定範例見 [`docs/scenario-controls.md`](docs/scenario-controls.md)，完整事件來源及測試狀態見 [`docs/physics-matrix.md`](docs/physics-matrix.md)。
 
 `/opc` 開啟三列固定位置的物理分類選單，選擇分類後才會顯示該組規則；分類布局延續舊版熟悉的互動、建造、重力與流體、世界、生長區域，並加入機械分類。亦可使用 `/openphysics`、`/ophysics` 或 `/pc`。其他指令：
 
@@ -34,6 +34,8 @@ OpenPhysicsControl 是從零撰寫、採 MIT 授權的 Bukkit 世界物理控制
 OP 仍可修改所有世界。若玩家同時擁有 `openphysicscontrol.set` 與 `openphysicscontrol.set.current-world`，範圍較大的 `openphysicscontrol.set` 優先。
 
 指令狀態以規則行為為準：大多數規則的 `on` 代表物理正常運作、`off` 代表停止；`block-hit-projectile-removal` 則是相容舊版的可選清理，`on` 時會移除命中方塊的箭矢與三叉戟，預設 `off` 以保留原版箭矢留存。
+
+`entity-collisions` 使用 Paper 26.3 新增的 `EntityCollideWithEntityEvent`，`off` 會讓生物、玩家等實體不再被彼此推開；Spigot 沒有對應事件，該規則在 Spigot 上不生效並於啟動時記錄警告。客戶端仍可能自行預測玩家推擠，需搭配隊伍碰撞規則才能完全消除畫面上的推擠。`mob-construction` 控制以方塊結構建造雪人、鐵魔像、銅魔像與凋零怪；`off` 時結構方塊會保留，不會生成生物。
 
 `oxygen-depletion` 的 `off` 只會阻止水中氧氣減少，離水後仍會恢復氧氣；`drowning-damage` 是獨立規則。`fire-damage` 不會攔截仙人掌、甜莓叢或尖滴水石等一般接觸傷害，這些不屬於火焰與高溫控制範圍。
 
@@ -65,7 +67,7 @@ material-overrides:
 
 ## GitHub Actions
 
-`.github/workflows/build.yml` 會在 push、pull request 與手動觸發時使用 Java 25，先驗證 Spigot 26.2 profile，再建立 Paper 26.2 shaded JAR，並將 `OpenPhysicsControl.jar` 上傳為 workflow artifact。
+`.github/workflows/build.yml` 會在 push、pull request 與手動觸發時使用 Java 25，先驗證 Spigot 26.3 profile，再建立 Paper 26.3 shaded JAR，並將 `OpenPhysicsControl.jar` 上傳為 workflow artifact。
 
 ## 從 Dymeth PhysicsControl 遷移
 
@@ -84,10 +86,10 @@ material-overrides:
 唯一打包的 runtime 是 MiniMessage 及其必要 Adventure 元件；所有類別 relocation 到插件內部 namespace。Bukkit/Paper API 為 `compileOnly`。
 
 ```bash
-# 在本目錄執行，預設 Paper 26.2 API
+# 在本目錄執行，預設 Paper 26.3 API
 JAVA_HOME=/path/to/jdk-25 ./gradlew clean build
 
-# Spigot 26.2 API 相容性建置
+# Spigot 26.3 API 相容性建置
 JAVA_HOME=/path/to/jdk-25 ./gradlew clean build -PserverPlatform=spigot
 ```
 
@@ -99,13 +101,19 @@ JAVA_HOME=/path/to/jdk-25 ./gradlew clean build -PserverPlatform=spigot
 # 分類、語系完整性與 descriptor 測試
 JAVA_HOME=/path/to/jdk-25 ./gradlew clean test
 
-# Mineflayer 黑箱測試；會下載已鎖定 SHA-256 的 Paper 1.21.11 測試服
+# Mineflayer 黑箱測試；預設下載已鎖定雜湊值的 Paper 26.3 build 235 與 ViaVersion/ViaBackwards 5.12.2
+JAVA_HOME=/path/to/jdk-25 ./gradlew shadowJar testDriverJar
 cd tests/mineflayer
 npm ci
 JAVA_HOME=/path/to/jdk-25 npm test
+
+# 其他目標：26.1.2（Mineflayer 直連）或 1.21.11
+OPC_TEST_TARGET=26.1.2 JAVA_HOME=/path/to/jdk-25 npm test
+# 只跑部分案例
+OPC_TEST_ONLY=testGravity,testPistons JAVA_HOME=/path/to/jdk-25 npm test
 ```
 
-Mineflayer 4.37.1 目前最高支援 Minecraft 1.21.11，尚不能直接登入 26.2。黑箱測試使用同一個插件 JAR 驗證可觀測行為；26.2 仍由雙 API 編譯與 Paper/Folia 實機測試驗證。
+Mineflayer 4.39.0 最高支援 Minecraft 26.1，因此 26.3 目標以 ViaVersion/ViaBackwards 把 26.1 客戶端橋接到 26.3 伺服器。橋接後客戶端的移動封包會被伺服器判定無效，ViaBackwards 也會丟棄「對方塊使用」封包，所以 26.3 目標只以指令移動機器人，方塊右鍵改由僅供測試的 `OpenPhysicsControlTestDriver.jar`（`src/testDriver`，不會打包進插件）在伺服器端呼叫與封包處理相同的原版 `useItemOn` 路徑。直連的 26.1.2 目標仍以真實封包驗證同一組互動。
 
 ## 授權
 
