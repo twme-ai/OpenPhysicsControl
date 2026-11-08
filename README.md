@@ -19,10 +19,34 @@ OpenPhysicsControl 是從零撰寫、採 MIT 授權的 Bukkit 世界物理控制
 
 ```text
 /opc set <rule> <on|off|toggle> [world]
+/opc set <rule> <on|off> *
 /opc material <rule> <material> <on|off|toggle|clear> [world]
 /opc language [auto|en|zh_tw]
+/opc debug [on|off|<rule>]
 /opc reload
 ```
+
+### 一次修改所有世界
+
+`/opc set <rule> <on|off> *` 以 `*` 代替世界名稱，會同時寫入：所有已載入世界、`worlds/` 內尚未載入世界的存檔，以及 `default-rules.yml`（讓之後新建的世界也採用相同值）。各世界目前狀態可能不同，因此 `*` 只接受 `on` 或 `off`，不接受 `toggle`。需要 OP 或 `openphysicscontrol.set`；只有 `openphysicscontrol.set.current-world` 不足以使用 `*`。
+
+```text
+/opc set hanging-entity-detachment on *
+```
+
+### 除錯：找出是哪條規則擋住了動作
+
+`/opc debug` 開啟後，插件每阻擋一個事件，就會即時傳一則訊息給開啟者（玩家或控制台），列出規則名稱與鍵值、事件類別、世界、座標、對象，以及可取得的原因（`cause=`）與觸發者（`by=`）。例如：
+
+```text
+[OpenPhysicsControl] 已阻擋 展示框、畫與坐墊脫落 (hanging-entity-detachment)｜EntityBreakByEntityEvent｜world 10 101 -4｜cushion cause=ENTITY by=player:Steve
+```
+
+- `/opc debug`：切換追蹤全部規則。
+- `/opc debug <rule>`：只追蹤一條規則，並顯示該規則在目前世界的狀態。
+- `/opc debug off`：關閉。玩家離線時也會自動關閉。
+
+相同規則與事件每秒最多顯示一則，其餘以「另有 N 次相同事件未顯示」合併，避免方塊更新等高頻事件洗版。沒有人開啟追蹤時幾乎不增加負擔。需要 OP 或 `openphysicscontrol.debug`。
 
 ### 權限
 
@@ -30,6 +54,7 @@ OpenPhysicsControl 是從零撰寫、採 MIT 授權的 Bukkit 世界物理控制
 - `openphysicscontrol.set`：透過指令或選單修改任何已載入世界。
 - `openphysicscontrol.set.current-world`：只允許玩家透過指令或選單修改當下所在世界；即使在指令中指定其他世界，或開啟選單後移動到其他世界，也不會放行。
 - `openphysicscontrol.reload`：重新載入設定與世界規則。
+- `openphysicscontrol.debug`：使用 `/opc debug` 追蹤被阻擋的事件（預設 OP）。
 
 OP 仍可修改所有世界。若玩家同時擁有 `openphysicscontrol.set` 與 `openphysicscontrol.set.current-world`，範圍較大的 `openphysicscontrol.set` 優先。
 

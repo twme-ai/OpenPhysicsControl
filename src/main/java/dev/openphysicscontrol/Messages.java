@@ -45,9 +45,16 @@ public final class Messages {
     }
 
     public String plain(CommandSender recipient, String key) {
+        return plain(recipient, key, Map.of());
+    }
+
+    public String plain(CommandSender recipient, String key, Map<String, String> placeholders) {
         String locale = this.locales.localeOf(recipient);
         String input = this.locales.phrase(locale, key)
             .replace("<prefix>", this.locales.phrase(locale, "prefix"));
+        for (Map.Entry<String, String> entry : placeholders.entrySet()) {
+            input = input.replace("<" + entry.getKey() + ">", escape(entry.getValue()));
+        }
         return this.miniMessage.stripTags(input);
     }
 

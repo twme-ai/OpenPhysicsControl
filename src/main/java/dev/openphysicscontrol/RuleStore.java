@@ -123,6 +123,55 @@ public final class RuleStore {
         return value;
     }
 
+    /**
+     * Applies one rule value everywhere: every loaded world, the saved file of every unloaded world,
+     * and default-rules.yml so worlds created later start with the same value.
+     */
+    public synchronized AllWorldsResult setAll(Iterable<World> loadedWorlds, Rule rule, boolean value) {
+        Set<String> loadedFiles = new java.util.HashSet<>();
+        int loaded = 0;
+        for (World world : loadedWorlds) {
+            set(world, rule, value);
+            loadedFiles.add(worldFileName(world.getName()));
+            loadedFiles.add(world.getUID() + ".yml");
+            loaded++;
+        }
+        File directory = new File(this.plugin.getDataFolder(), "worlds");
+        int unloaded = applyToSavedWorldFiles(directory, loadedFiles, rule, value);
+
+        File defaultsFile = new File(this.plugin.getDataFolder(), DEFAULTS_RESOURCE);
+        if (!defaultsFile.isFile()) this.plugin.saveResource(DEFAULTS_RESOURCE, false);
+        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(defaultsFile);
+        yaml.set(rule.key(), value);
+        save(yaml, defaultsFile);
+        EnumMap<Rule, Boolean> updatedDefaults = new EnumMap<>(this.defaults);
+        updatedDefaults.put(rule, value);
+        this.defaults = Collections.unmodifiableMap(updatedDefaults);
+        return new AllWorldsResult(loaded, unloaded);
+    }
+
+    /** Writes {@code rule: value} into every saved world file in {@code directory} not named in {@code skip}. */
+    static int applyToSavedWorldFiles(File directory, Set<String> skip, Rule rule, boolean value) {
+        File[] files = directory.listFiles((dir, name) -> name.endsWith(".yml") && !skip.contains(name));
+        if (files == null) return 0;
+        int changed = 0;
+        for (File file : files) {
+            if (!file.isFile()) continue;
+            YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
+            yaml.set(rule.key(), value);
+            try {
+                yaml.save(file);
+            } catch (IOException exception) {
+                throw new IllegalStateException("Unable to save " + file, exception);
+            }
+            changed++;
+        }
+        return changed;
+    }
+
+    public record AllWorldsResult(int loadedWorlds, int unloadedWorlds) {
+    }
+
     public synchronized boolean setMaterial(World world, Rule rule, Material material, boolean requested) {
         if (!material.isBlock()) throw new IllegalArgumentException(material + " is not a block material");
         if (!this.states.containsKey(world.getUID())) load(world);
