@@ -34,6 +34,8 @@ final class ResourceTest {
         Map<String, Object> currentWorld = (Map<String, Object>) permissions.get(
             OpenPhysicsControlPlugin.SET_CURRENT_WORLD_PERMISSION);
         assertEquals(Boolean.FALSE, currentWorld.get("default"));
+        Map<String, Object> debug = (Map<String, Object>) permissions.get(OpenPhysicsControlPlugin.DEBUG_PERMISSION);
+        assertEquals("op", debug.get("default"));
     }
 
     @Test

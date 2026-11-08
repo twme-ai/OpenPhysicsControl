@@ -40,31 +40,32 @@ final class DynamicEntityListeners implements Listener {
     private DynamicEntityListeners() {
     }
 
-    static void register(JavaPlugin plugin, RuleStore rules) {
-        registerFirstAvailable(plugin, rules, Rule.KNOCKBACK, "knockback",
+    static void register(JavaPlugin plugin, RuleStore rules, PhysicsDebugger debugger) {
+        registerFirstAvailable(plugin, rules, debugger, Rule.KNOCKBACK, "knockback",
             PAPER_KNOCKBACK, BUKKIT_KNOCKBACK);
-        registerFirstAvailable(plugin, rules, Rule.MOB_TRANSFORM, "cube-mob splitting",
+        registerFirstAvailable(plugin, rules, debugger, Rule.MOB_TRANSFORM, "cube-mob splitting",
             SPIGOT_CUBE_SPLIT, PAPER_CUBE_SPLIT);
-        registerFirstAvailable(plugin, rules, Rule.MOB_TRANSFORM, "entity lightning transformations",
+        registerFirstAvailable(plugin, rules, debugger, Rule.MOB_TRANSFORM, "entity lightning transformations",
             PAPER_ENTITY_ZAP, SPIGOT_PIG_ZAP);
         // Non-hanging block-attached entities such as 26.3 cushions only report detachment through Paper.
-        registerFirstAvailable(plugin, rules, Rule.HANGING_ENTITY_DETACHMENT, "cushion detachment",
+        registerFirstAvailable(plugin, rules, debugger, Rule.HANGING_ENTITY_DETACHMENT, "cushion detachment",
             PAPER_ENTITY_BREAK);
-        registerFirstAvailable(plugin, rules, Rule.ENTITY_COLLISIONS, "entity-to-entity collision",
+        registerFirstAvailable(plugin, rules, debugger, Rule.ENTITY_COLLISIONS, "entity-to-entity collision",
             DynamicEntityListeners::firstCollidingEntityWorld, PAPER_ENTITY_COLLISION);
         // Only stop transitions that start a vault cycle; unlocking or ejecting vaults finish so keys are never lost.
-        registerFirstAvailable(plugin, rules, Rule.TRIAL_VAULTS, "vault activation",
+        registerFirstAvailable(plugin, rules, debugger, Rule.TRIAL_VAULTS, "vault activation",
             DynamicEntityListeners::vaultCycleStartWorld, PAPER_VAULT_STATE);
     }
 
     private static void registerFirstAvailable(
         JavaPlugin plugin,
         RuleStore rules,
+        PhysicsDebugger debugger,
         Rule rule,
         String description,
         String... candidates
     ) {
-        registerFirstAvailable(plugin, rules, rule, description, event -> event instanceof EntityEvent entityEvent
+        registerFirstAvailable(plugin, rules, debugger, rule, description, event -> event instanceof EntityEvent entityEvent
             ? entityEvent.getEntity().getWorld() : null, candidates);
     }
 
@@ -96,6 +97,7 @@ final class DynamicEntityListeners implements Listener {
     private static void registerFirstAvailable(
         JavaPlugin plugin,
         RuleStore rules,
+        PhysicsDebugger debugger,
         Rule rule,
         String description,
         Function<Event, World> worldOf,
@@ -120,7 +122,10 @@ final class DynamicEntityListeners implements Listener {
         EventExecutor executor = (ignored, event) -> {
             if (!(event instanceof Cancellable cancellable)) return;
             World world = worldOf.apply(event);
-            if (world != null && !rules.enabled(world, rule)) cancellable.setCancelled(true);
+            if (world != null && !rules.enabled(world, rule)) {
+                cancellable.setCancelled(true);
+                debugger.blocked(event, world, rule, null);
+            }
         };
         plugin.getServer().getPluginManager().registerEvent(
             eventType, listener, EventPriority.HIGHEST, executor, plugin, true);

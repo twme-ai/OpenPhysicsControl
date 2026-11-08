@@ -15,6 +15,7 @@ import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -98,18 +99,23 @@ import java.util.List;
 public final class PhysicsEvents implements Listener {
     private final RuleStore rules;
     private final BlockTaskScheduler scheduler;
+    private final PhysicsDebugger debugger;
 
-    public PhysicsEvents(JavaPlugin plugin, RuleStore rules) {
+    public PhysicsEvents(JavaPlugin plugin, RuleStore rules, PhysicsDebugger debugger) {
         this.rules = rules;
         this.scheduler = new BlockTaskScheduler(plugin);
+        this.debugger = debugger;
     }
 
     private void control(Cancellable event, World world, Rule rule) {
-        if (rule != null && !this.rules.enabled(world, rule)) event.setCancelled(true);
+        control(event, world, rule, null);
     }
 
     private void control(Cancellable event, World world, Rule rule, Material material) {
-        if (rule != null && !this.rules.enabled(world, rule, material)) event.setCancelled(true);
+        if (rule != null && !this.rules.enabled(world, rule, material)) {
+            event.setCancelled(true);
+            this.debugger.blocked((Event) event, world, rule, material);
+        }
     }
 
     private void control(Cancellable event, Block block, Rule rule) {
@@ -122,6 +128,13 @@ public final class PhysicsEvents implements Listener {
 
     private boolean disabled(World world, Rule rule, Material material) {
         return !this.rules.enabled(world, rule, material);
+    }
+
+    /** Like {@link #disabled(World, Rule, Material)}, but reports the stopped event to {@code /opc debug}. */
+    private boolean blocked(Event event, World world, Rule rule, Material material) {
+        if (!disabled(world, rule, material)) return false;
+        this.debugger.blocked(event, world, rule, material);
+        return true;
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -144,6 +157,7 @@ public final class PhysicsEvents implements Listener {
         previous.setAge(current.getAge() - 1);
         block.setBlockData(previous, false);
         event.setCancelled(true);
+        this.debugger.blocked(event, block.getWorld(), rule, material);
     }
 
     private static Rule naturalAgeRule(Material material) {
@@ -169,6 +183,7 @@ public final class PhysicsEvents implements Listener {
             || !disabled(block.getWorld(), Rule.PLACED_BLOCK_CONNECTIONS, block.getType())) return;
 
         Material placedType = block.getType();
+        this.debugger.blocked(event, block.getWorld(), Rule.PLACED_BLOCK_CONNECTIONS, placedType);
         this.scheduler.nextTick(block.getLocation(), () -> {
             if (block.getType() != placedType) return;
             var data = block.getBlockData();
@@ -234,7 +249,7 @@ public final class PhysicsEvents implements Listener {
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void trees(StructureGrowEvent event) {
         Material material = event.getLocation().getBlock().getType();
-        if (event.isFromBonemeal() && disabled(event.getWorld(), Rule.BONE_MEAL, material)) {
+        if (event.isFromBonemeal() && blocked(event, event.getWorld(), Rule.BONE_MEAL, material)) {
             event.setCancelled(true);
             return;
         }
@@ -295,16 +310,16 @@ public final class PhysicsEvents implements Listener {
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void entityExplosion(EntityExplodeEvent event) {
-        controlExplosion(event.getLocation().getWorld(), event.blockList());
+        controlExplosion(event, event.getLocation().getWorld(), event.blockList());
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void blockExplosion(BlockExplodeEvent event) {
-        if (disabled(event.getBlock().getWorld(), Rule.BLOCK_ORIGIN_EXPLOSIONS, event.getBlock().getType())) {
+        if (blocked(event, event.getBlock().getWorld(), Rule.BLOCK_ORIGIN_EXPLOSIONS, event.getBlock().getType())) {
             event.setCancelled(true);
             return;
         }
-        controlExplosion(event.getBlock().getWorld(), event.blockList());
+        controlExplosion(event, event.getBlock().getWorld(), event.blockList());
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
@@ -377,7 +392,7 @@ public final class PhysicsEvents implements Listener {
             return;
         }
         for (BlockState state : event.getBlocks()) {
-            if (disabled(event.getWorld(), Rule.PORTAL_CREATION, state.getType())) {
+            if (blocked(event, event.getWorld(), Rule.PORTAL_CREATION, state.getType())) {
                 event.setCancelled(true);
                 return;
             }
@@ -386,7 +401,7 @@ public final class PhysicsEvents implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void redstone(BlockRedstoneEvent event) {
-        if (disabled(event.getBlock().getWorld(), Rule.REDSTONE, event.getBlock().getType())) {
+        if (blocked(event, event.getBlock().getWorld(), Rule.REDSTONE, event.getBlock().getType())) {
             event.setNewCurrent(event.getOldCurrent());
         }
     }
@@ -602,8 +617,8 @@ public final class PhysicsEvents implements Listener {
         control(event, event.getBlock(), Rule.NOTE_BLOCKS);
     }
 
-    private void controlExplosion(World world, List<Block> affectedBlocks) {
-        affectedBlocks.removeIf(block -> disabled(world, Rule.EXPLOSION_BLOCK_DAMAGE, block.getType()));
+    private void controlExplosion(Event event, World world, List<Block> affectedBlocks) {
+        affectedBlocks.removeIf(block -> blocked(event, world, Rule.EXPLOSION_BLOCK_DAMAGE, block.getType()));
     }
 
     private void controlPiston(Cancellable event, Block piston, List<Block> movedBlocks) {
@@ -612,7 +627,7 @@ public final class PhysicsEvents implements Listener {
             return;
         }
         for (Block moved : movedBlocks) {
-            if (disabled(piston.getWorld(), Rule.PISTONS, moved.getType())) {
+            if (blocked((Event) event, piston.getWorld(), Rule.PISTONS, moved.getType())) {
                 event.setCancelled(true);
                 return;
             }

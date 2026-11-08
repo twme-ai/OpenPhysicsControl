@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.9.0 - 2026-11-08
+
+- Added `/opc set <rule> <on|off> *`, which applies one rule to every loaded world, the saved file of every unloaded world in `worlds/`, and `default-rules.yml` so new worlds follow. `toggle` is refused with `*`, and it requires OP or `openphysicscontrol.set`.
+- Added `/opc debug [on|off|<rule>]` and the `openphysicscontrol.debug` permission. Each event the plugin stops is reported live to the tracing player or console with the rule, event class, world, position, target, and, where the event exposes them, its cause and remover. Repeats of the same rule and event are limited to one message per second.
+- Added Mineflayer coverage for the all-worlds command and debug tracing, including 26.3 cushion detachment.
+
 ## 2.8.0 - 2026-11-01
 
 - Updated the build to Paper `26.3.build.235-stable` and Spigot `26.3-R0.1-SNAPSHOT`, and aligned the shaded MiniMessage with Paper 26.3's Adventure 5.2.0.

@@ -67,6 +67,7 @@ const java = process.env.JAVA_HOME ? join(process.env.JAVA_HOME, 'bin/java') : '
 let server
 let bot
 let serverOutput = ''
+let serverDirectory
 
 function delay (milliseconds) {
   return new Promise(resolve => setTimeout(resolve, milliseconds))
@@ -613,6 +614,50 @@ async function testCushionDetachment () {
   assert.equal(await unsupportedCushion(), false, 'hanging entity detachment on: unsupported cushion remained')
   await commands('kill @e[type=minecraft:cushion]', 'kill @e[type=minecraft:item]')
   console.log('PASS hanging-entity-detachment for 26.3 cushions')
+}
+
+async function testAllWorldsAndDebug () {
+  const dataDirectory = join(serverDirectory, 'plugins/OpenPhysicsControl')
+  const ruleIn = async file => (await readFile(join(dataDirectory, file), 'utf8'))
+    .match(/^hanging-entity-detachment: (true|false)$/m)?.[1]
+  const files = ['worlds/world.yml', 'worlds/world_nether.yml', 'worlds/world_the_end.yml',
+    'worlds/archived_world.yml', 'default-rules.yml']
+  // A saved file whose world is not loaded must follow `*` as well.
+  await writeFile(join(dataDirectory, 'worlds/archived_world.yml'), 'hanging-entity-detachment: true\n')
+
+  await commands('opc set hanging-entity-detachment off *')
+  for (const file of files) assert.equal(await ruleIn(file), 'false', `${file} did not follow opc set ... off *`)
+  await commands('opc set hanging-entity-detachment on *')
+  for (const file of files) assert.equal(await ruleIn(file), 'true', `${file} did not follow opc set ... on *`)
+  await commands('opc set hanging-entity-detachment toggle *')
+  assert.equal(await ruleIn('worlds/world.yml'), 'true', 'toggle with * must be refused')
+  console.log('PASS opc set <rule> <state> * across loaded, unloaded, and default rules')
+
+  await commands('op PhysicsBot')
+  const enabled = nextChatMessage(/opc debug off/)
+  bot.chat('/opc debug gravity')
+  await enabled
+  const traced = nextChatMessage(/\(gravity\).*sand/, 4000)
+  await commands('opc set gravity off world', 'setblock 2 106 0 minecraft:sand')
+  console.log(`debug trace: ${await traced}`)
+
+  if (supports('cushions')) {
+    await commands('kill @e[type=minecraft:cushion]', 'setblock 10 100 -4 minecraft:stone',
+      'summon minecraft:cushion 10.5 101 -3.5', 'opc set hanging-entity-detachment off world')
+    const cushion = nextChatMessage(/\(hanging-entity-detachment\).*EntityBreakEvent.*cushion.*cause=PHYSICS/, 8000)
+    bot.chat('/opc debug hanging-entity-detachment')
+    await delay(300)
+    await commands('setblock 10 100 -4 air')
+    console.log(`debug trace: ${await cushion}`)
+    await commands('opc set hanging-entity-detachment on world', 'kill @e[type=minecraft:cushion]',
+      'kill @e[type=minecraft:item]')
+  }
+
+  const disabled = nextChatMessage(/Debug tracing off|已關閉除錯追蹤/)
+  bot.chat('/opc debug off')
+  await disabled
+  await commands('opc set gravity on world', 'setblock 2 106 0 air')
+  console.log('PASS opc debug traces blocked events')
 }
 
 async function testEntityCollisions () {
@@ -1239,6 +1284,7 @@ async function start () {
   const serverDir = configuredServerDirectory
     ? resolve(configuredServerDirectory)
     : await mkdtemp(join(tmpdir(), 'openphysicscontrol-mineflayer-'))
+  serverDirectory = serverDir
   await mkdir(join(serverDir, 'plugins'), { recursive: true })
   await mkdir(join(serverDir, 'plugins/OpenPhysicsControl'), { recursive: true })
   await mkdir(join(serverDir, 'plugins/PhysicsControl/triggers'), { recursive: true })
@@ -1327,6 +1373,7 @@ async function start () {
     testPlayerEntityInteractions,
     testHangingEntityDetachment,
     testCushionDetachment,
+    testAllWorldsAndDebug,
     testEntityCollisions,
     testMobConstruction,
     testBlockOriginExplosions,

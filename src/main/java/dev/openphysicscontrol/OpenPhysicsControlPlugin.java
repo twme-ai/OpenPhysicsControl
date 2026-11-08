@@ -9,6 +9,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.event.world.WorldUnloadEvent;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -21,10 +22,13 @@ import java.util.Map;
 public final class OpenPhysicsControlPlugin extends JavaPlugin implements Listener {
     static final String SET_PERMISSION = "openphysicscontrol.set";
     static final String SET_CURRENT_WORLD_PERMISSION = "openphysicscontrol.set.current-world";
+    static final String DEBUG_PERMISSION = "openphysicscontrol.debug";
+    static final String ALL_WORLDS = "*";
 
     private LocaleService locales;
     private Messages messages;
     private RuleStore rules;
+    private PhysicsDebugger debugger;
 
     @Override
     public void onEnable() {
@@ -34,8 +38,9 @@ public final class OpenPhysicsControlPlugin extends JavaPlugin implements Listen
         this.rules = new RuleStore(this);
         this.rules.reload();
         this.getServer().getPluginManager().registerEvents(this, this);
-        this.getServer().getPluginManager().registerEvents(new PhysicsEvents(this, this.rules), this);
-        DynamicEntityListeners.register(this, this.rules);
+        this.debugger = new PhysicsDebugger(this.messages);
+        this.getServer().getPluginManager().registerEvents(new PhysicsEvents(this, this.rules, this.debugger), this);
+        DynamicEntityListeners.register(this, this.rules, this.debugger);
     }
 
     public RuleStore rules() {
@@ -54,6 +59,7 @@ public final class OpenPhysicsControlPlugin extends JavaPlugin implements Listen
             case "material", "materials" -> setMaterial(sender, args);
             case "language", "lang" -> language(sender, args);
             case "reload" -> reload(sender);
+            case "debug" -> debug(sender, args);
             default -> openMenu(sender);
         };
     }
@@ -94,6 +100,7 @@ public final class OpenPhysicsControlPlugin extends JavaPlugin implements Listen
             }
         };
         if (!args[2].equalsIgnoreCase("toggle") && requested == null) return true;
+        if (args.length >= 4 && args[3].equals(ALL_WORLDS)) return setRuleEverywhere(sender, rule, requested);
 
         World world;
         if (args.length >= 4) {
@@ -114,6 +121,59 @@ public final class OpenPhysicsControlPlugin extends JavaPlugin implements Listen
             "world", world.getName(),
             "state", this.messages.plain(sender, enabled ? "state-on" : "state-off")
         ));
+        return true;
+    }
+
+    private boolean setRuleEverywhere(CommandSender sender, Rule rule, Boolean requested) {
+        if (!sender.isOp() && !sender.hasPermission(SET_PERMISSION)) {
+            this.messages.send(sender, "no-permission");
+            return true;
+        }
+        if (requested == null) {
+            this.messages.send(sender, "all-worlds-toggle");
+            return true;
+        }
+        RuleStore.AllWorldsResult result = this.rules.setAll(this.getServer().getWorlds(), rule, requested);
+        this.messages.send(sender, "all-worlds-rule-changed", Map.of(
+            "rule", this.messages.plain(sender, rule.messageKey()),
+            "loaded", Integer.toString(result.loadedWorlds()),
+            "unloaded", Integer.toString(result.unloadedWorlds()),
+            "state", this.messages.plain(sender, requested ? "state-on" : "state-off")
+        ));
+        return true;
+    }
+
+    private boolean debug(CommandSender sender, String[] args) {
+        if (!sender.isOp() && !sender.hasPermission(DEBUG_PERMISSION)) {
+            this.messages.send(sender, "no-permission");
+            return true;
+        }
+        String option = args.length >= 2 ? args[1].toLowerCase(Locale.ROOT) : "";
+        if (option.equals("off") || option.isEmpty() && this.debugger.tracing(sender)) {
+            this.messages.send(sender, this.debugger.disable(sender) ? "debug-disabled" : "debug-not-enabled");
+            return true;
+        }
+        Rule filter = null;
+        if (!option.isEmpty() && !option.equals("on") && !option.equals("all")) {
+            try {
+                filter = Rule.parse(args[1]);
+            } catch (IllegalArgumentException exception) {
+                this.messages.send(sender, "rule-not-found", Map.of("rule", args[1]));
+                return true;
+            }
+        }
+        this.debugger.enable(sender, filter);
+        this.messages.send(sender, "debug-enabled", Map.of(
+            "rule", filter == null ? this.messages.plain(sender, "debug-all-rules")
+                : this.messages.plain(sender, filter.messageKey()) + " (" + filter.key() + ")"
+        ));
+        if (filter != null && sender instanceof Player player) {
+            boolean enabled = this.rules.enabled(player.getWorld(), filter);
+            this.messages.send(sender, "debug-rule-state", Map.of(
+                "world", player.getWorld().getName(),
+                "state", this.messages.plain(sender, enabled ? "state-on" : "state-off")
+            ));
+        }
         return true;
     }
 
@@ -216,13 +276,17 @@ public final class OpenPhysicsControlPlugin extends JavaPlugin implements Listen
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         List<String> options = new ArrayList<>();
         if (args.length == 1) {
-            options.addAll(List.of("set", "material", "language", "reload"));
+            options.addAll(List.of("set", "material", "language", "reload", "debug"));
         } else if (args.length == 2 && args[0].equalsIgnoreCase("set")) {
             for (Rule rule : Rule.values()) options.add(rule.key());
         } else if (args.length == 3 && args[0].equalsIgnoreCase("set")) {
             options.addAll(List.of("on", "off", "toggle"));
         } else if (args.length == 4 && args[0].equalsIgnoreCase("set")) {
             addEditableWorlds(sender, options);
+            if (sender.isOp() || sender.hasPermission(SET_PERMISSION)) options.add(ALL_WORLDS);
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("debug")) {
+            options.addAll(List.of("on", "off"));
+            for (Rule rule : Rule.values()) options.add(rule.key());
         } else if (args.length == 2 && (args[0].equalsIgnoreCase("material") || args[0].equalsIgnoreCase("materials"))) {
             for (Rule rule : Rule.values()) options.add(rule.key());
         } else if (args.length == 3 && (args[0].equalsIgnoreCase("material") || args[0].equalsIgnoreCase("materials"))) {
@@ -287,6 +351,11 @@ public final class OpenPhysicsControlPlugin extends JavaPlugin implements Listen
     @EventHandler(ignoreCancelled = true)
     public void inventoryDrag(InventoryDragEvent event) {
         if (event.getInventory().getHolder() instanceof RulesMenu) event.setCancelled(true);
+    }
+
+    @EventHandler
+    public void quit(PlayerQuitEvent event) {
+        this.debugger.forget(event.getPlayer());
     }
 
     @EventHandler

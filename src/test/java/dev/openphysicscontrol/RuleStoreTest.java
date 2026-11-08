@@ -8,6 +8,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -64,5 +65,30 @@ final class RuleStoreTest {
         assertEquals(Boolean.FALSE, overrides.get(Rule.GRAVITY).get(Material.GRAVEL));
         assertEquals(Boolean.FALSE, overrides.get(Rule.CROP_GROWTH).get(Material.WHEAT));
         assertFalse(overrides.containsKey(Rule.BONE_MEAL));
+    }
+
+    @Test
+    void allWorldsUpdatesSavedUnloadedWorldsButSkipsLoadedOnes() throws Exception {
+        Path loaded = this.temporaryDirectory.resolve("world.yml");
+        Path unloaded = this.temporaryDirectory.resolve("archive.yml");
+        Files.writeString(loaded, "hanging-entity-detachment: false\n");
+        Files.writeString(unloaded, "hanging-entity-detachment: false\ngravity: false\n");
+        Files.writeString(this.temporaryDirectory.resolve("notes.txt"), "untouched\n");
+
+        int changed = RuleStore.applyToSavedWorldFiles(this.temporaryDirectory.toFile(), Set.of("world.yml"),
+            Rule.HANGING_ENTITY_DETACHMENT, true);
+
+        assertEquals(1, changed);
+        assertEquals("hanging-entity-detachment: false\n", Files.readString(loaded));
+        YamlConfiguration archive = YamlConfiguration.loadConfiguration(unloaded.toFile());
+        assertTrue(archive.getBoolean("hanging-entity-detachment"));
+        assertFalse(archive.getBoolean("gravity", true));
+        assertEquals("untouched\n", Files.readString(this.temporaryDirectory.resolve("notes.txt")));
+    }
+
+    @Test
+    void allWorldsToleratesAMissingWorldsDirectory() {
+        assertEquals(0, RuleStore.applyToSavedWorldFiles(this.temporaryDirectory.resolve("missing").toFile(),
+            Set.of(), Rule.GRAVITY, false));
     }
 }

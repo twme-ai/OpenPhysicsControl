@@ -1,3 +1,4 @@
 .gradle/
 build/
 tests/mineflayer/node_modules/
+.work/
